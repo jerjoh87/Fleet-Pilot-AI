@@ -189,7 +189,7 @@ export function MarketingLanding() {
                   href="/dashboard"
                   className={`mt-8 rounded-lg py-3 text-center text-sm font-medium ${plan.featured ? "bg-blue-500 text-white hover:bg-blue-400" : "border border-white/15 bg-white/[0.04] text-white hover:bg-white/[0.08]"}`}
                 >
-                  {plan.id === "enterprise" ? "Contact sales" : "Start free trial"}
+                  {plan.id === "pro" ? "Choose Pro" : "Start free trial"}
                 </a>
               </div>
             ))}
@@ -222,7 +222,11 @@ export function MarketingLanding() {
               </span>
               <span className="font-medium text-white">FleetPilot AI</span>
             </div>
-            <p>© {new Date().getFullYear()} FleetPilot AI · The AI operating system for car rentals.</p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <p>© {new Date().getFullYear()} FleetPilot AI</p>
+              <a href="/legal/terms" className="hover:text-white transition">Terms of Service</a>
+              <a href="/legal/privacy" className="hover:text-white transition">Privacy Policy</a>
+            </div>
           </div>
         </footer>
       </div>

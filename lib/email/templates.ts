@@ -226,3 +226,101 @@ export function invoiceSentEmail(data: InvoiceNoticeData) {
     `, data.brandColor)
   };
 }
+
+// ---------------------------------------------------------------------------
+// Rental insurance notifications
+// ---------------------------------------------------------------------------
+
+export type InsurancePurchasedData = {
+  customerName: string;
+  organizationName: string;
+  providerName: string;
+  planName: string;
+  coverageSummary: string;
+  totalCents: number;
+  policyNumber?: string;
+  vehicleName: string;
+  brandColor?: string;
+};
+
+export function insurancePurchasedEmail(data: InsurancePurchasedData) {
+  const total = (data.totalCents / 100).toLocaleString("en-US", { style: "currency", currency: "USD" });
+  return {
+    subject: `Coverage confirmed — ${data.providerName} · ${data.organizationName}`,
+    html: base(`
+      <h2>Your rental coverage is active</h2>
+      <p>Hi ${data.customerName}, your ${data.providerName} coverage for the ${data.vehicleName} is confirmed.</p>
+      <div class="box">
+        <table>
+          <tr><td>Provider</td><td>${data.providerName}</td></tr>
+          <tr><td>Plan</td><td>${data.planName}</td></tr>
+          ${data.policyNumber ? `<tr><td>Policy number</td><td>${data.policyNumber}</td></tr>` : ""}
+          <tr><td>Coverage cost</td><td>${total}</td></tr>
+        </table>
+      </div>
+      <p>${data.coverageSummary}</p>
+    `, data.brandColor)
+  };
+}
+
+export type InsuranceUploadData = {
+  customerName: string;
+  organizationName: string;
+  insuranceCompany: string;
+  manualApproval: boolean;
+  brandColor?: string;
+};
+
+export function insuranceUploadedEmail(data: InsuranceUploadData) {
+  return {
+    subject: `Insurance documents received — ${data.organizationName}`,
+    html: base(`
+      <h2>We received your insurance documents</h2>
+      <p>Hi ${data.customerName}, thanks for uploading proof of coverage from <strong>${data.insuranceCompany}</strong>.</p>
+      <p>${data.manualApproval
+        ? "Status: <strong>Pending review</strong> — the host will verify your documents before pickup and we'll email you when it's approved."
+        : "Your coverage has been recorded. The host may reach out if any additional information is needed."}</p>
+    `, data.brandColor)
+  };
+}
+
+export type InsuranceDecisionData = {
+  customerName: string;
+  organizationName: string;
+  reason?: string;
+  brandColor?: string;
+};
+
+export function insuranceApprovedEmail(data: InsuranceDecisionData) {
+  return {
+    subject: `Insurance approved — ${data.organizationName}`,
+    html: base(`
+      <h2>Your insurance has been approved</h2>
+      <p>Hi ${data.customerName}, your uploaded insurance has been verified and approved by ${data.organizationName}. You're all set for pickup.</p>
+    `, data.brandColor)
+  };
+}
+
+export function insuranceRejectedEmail(data: InsuranceDecisionData) {
+  return {
+    subject: `Action needed: insurance not approved — ${data.organizationName}`,
+    html: base(`
+      <h2>Your insurance could not be approved</h2>
+      <p>Hi ${data.customerName}, unfortunately ${data.organizationName} was unable to approve your uploaded insurance.</p>
+      ${data.reason ? `<div class="box"><table><tr><td>Reason</td><td>${data.reason}</td></tr></table></div>` : ""}
+      <p>Please purchase coverage at checkout or upload a valid policy to keep your reservation.</p>
+    `, data.brandColor)
+  };
+}
+
+export function insuranceMoreInfoEmail(data: InsuranceDecisionData) {
+  return {
+    subject: `More information needed for your insurance — ${data.organizationName}`,
+    html: base(`
+      <h2>We need a bit more information</h2>
+      <p>Hi ${data.customerName}, ${data.organizationName} needs additional details to verify your insurance.</p>
+      ${data.reason ? `<div class="box"><table><tr><td>Requested</td><td>${data.reason}</td></tr></table></div>` : ""}
+      <p>Please reply with the requested documents so we can finalize your reservation.</p>
+    `, data.brandColor)
+  };
+}

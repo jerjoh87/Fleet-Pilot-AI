@@ -24,6 +24,8 @@ export type PublicTenant = {
   businessHours: string;
   trustBadges: string[];
   depositFee: number;
+  taxRatePct: number;
+  platformFeePct: number;
 };
 
 /** Public-facing vehicle shape — omits VIN / plate and other internal fields. */
@@ -172,7 +174,9 @@ function demoTenant(slug: string): PublicTenant {
     depositPolicy: "A refundable security deposit is authorized at booking and released after return inspection.",
     businessHours: "Mon-Sat 8:00 AM-7:00 PM, Sun 10:00 AM-4:00 PM",
     trustBadges: ["Verified fleet", "Roadside support", "Contactless booking"],
-    depositFee: 250
+    depositFee: 250,
+    taxRatePct: 8,
+    platformFeePct: 10
   };
 }
 
@@ -212,7 +216,9 @@ export async function getPublicTenant(slug: string): Promise<PublicTenant | null
     depositPolicy: org.websiteSettings?.depositPolicy ?? "",
     businessHours: org.websiteSettings?.businessHours ?? "",
     trustBadges: org.websiteSettings?.trustBadges ?? [],
-    depositFee: (org.websiteSettings?.depositFeeCents ?? 25000) / 100
+    depositFee: (org.websiteSettings?.depositFeeCents ?? 25000) / 100,
+    taxRatePct: Number(org.websiteSettings?.taxRatePct ?? 8),
+    platformFeePct: Number(org.websiteSettings?.platformFeePct ?? 10)
   };
 }
 

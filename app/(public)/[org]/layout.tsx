@@ -74,9 +74,11 @@ export default async function PublicTenantLayout({ children, params }: LayoutPro
             {tenant.instagramUrl ? <a className="inline-flex items-center gap-1 hover:text-foreground" href={tenant.instagramUrl}><Instagram className="size-4" />Instagram</a> : null}
             {tenant.facebookUrl ? <a className="inline-flex items-center gap-1 hover:text-foreground" href={tenant.facebookUrl}><Facebook className="size-4" />Facebook</a> : null}
           </div>
-          <p className="mt-3 text-xs">
-            Powered by <span className="font-medium text-foreground">FleetPilot AI</span>
-          </p>
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+            <span>Powered by <span className="font-medium text-foreground">FleetPilot AI</span></span>
+            <a href="/legal/terms" className="hover:text-foreground transition">Terms of Service</a>
+            <a href="/legal/privacy" className="hover:text-foreground transition">Privacy Policy</a>
+          </div>
         </div>
       </footer>
     </div>

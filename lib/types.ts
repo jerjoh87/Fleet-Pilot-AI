@@ -103,3 +103,123 @@ export type Activity = {
   target: string;
   createdAt: string;
 };
+
+export type BankAccount = {
+  id: string;
+  organizationId: string;
+  accountHolderName: string;
+  businessName: string;
+  accountType: string;
+  bankName: string;
+  last4: string;
+  routingLast4: string;
+  verificationStatus: string;
+  payoutSchedule: string;
+  nextPayoutDate: string;
+  estimatedPayout: number;
+};
+
+export type FinancialTransaction = {
+  id: string;
+  organizationId: string;
+  reservationId: string;
+  customerName: string;
+  vehicleLabel: string;
+  grossAmount: number;
+  platformFee: number;
+  processingFee: number;
+  insuranceRevenue: number;
+  taxes: number;
+  netPayout: number;
+  status: string;
+  createdAt: string;
+};
+
+export type PayoutRecord = {
+  id: string;
+  organizationId: string;
+  amount: number;
+  status: string;
+  arrivalDate: string;
+  failureMessage: string;
+  createdAt: string;
+};
+
+export type RentalAgreementRecord = {
+  id: string;
+  organizationId: string;
+  reservationId: string;
+  customerName: string;
+  vehicleLabel: string;
+  legalName: string;
+  status: string;
+  version: number;
+  signedAt: string;
+  ipAddress: string;
+  signatureMethod: string;
+  pdfUrl: string;
+};
+
+export type AgreementTemplateData = {
+  businessName: string;
+  businessAddress: string;
+  phone: string;
+  email: string;
+  terms: string;
+  mileagePolicy: string;
+  fuelPolicy: string;
+  smokingPolicy: string;
+  petPolicy: string;
+  lateReturnPolicy: string;
+  cleaningFee: string;
+  damagePolicy: string;
+  insuranceTerms: string;
+  roadsideAssistance: string;
+  securityDeposit: string;
+  cancellationPolicy: string;
+  prohibitedUses: string;
+  eligibilityRequirements?: string;
+  liabilityWaiver?: string;
+  disputeResolution?: string;
+  governingLaw?: string;
+  forceMajeure?: string;
+  platformDisclaimer?: string;
+  stateClauses: string;
+  signatureDisclosure: string;
+  activeVersion: number;
+};
+
+export type FinancialSummary = {
+  availableBalance: number;
+  pendingBalance: number;
+  totalRevenue: number;
+  lifetimeEarnings: number;
+  nextPayout: number;
+  lastPayout: number;
+  processingFees: number;
+  platformFees: number;
+  refunds: number;
+};
+
+export type SubscriptionInfo = {
+  planId: "trial" | "starter" | "growth" | "pro";
+  planName: string;
+  status: string;
+  interval: "monthly" | "annual";
+  trialStartedAt: string;
+  trialEndsAt: string;
+  trialDaysRemaining: number;
+  currentPeriodEnd: string;
+  cancelAtPeriodEnd: boolean;
+  nextInvoiceAmount: number;
+  paymentMethod: string;
+};
+
+export type UsageMetrics = {
+  vehicles: number;
+  staff: number;
+  locations: number;
+  aiRequests: number;
+  storageGb: number;
+  apiRequests: number;
+};

@@ -6,7 +6,7 @@ import { requireAppSession } from "@/lib/auth/session";
 import { can } from "@/lib/permissions";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
 import { appUrl, getOrCreateStripeCustomer, isStripeConfigured } from "@/lib/billing/customer";
-import { getPlan } from "@/lib/billing/plans";
+import { type BillingInterval, getPlan, getStripePriceId } from "@/lib/billing/plans";
 import { sendEmail } from "@/lib/email/send";
 import { depositReleaseEmail, refundNoticeEmail } from "@/lib/email/templates";
 
@@ -20,23 +20,57 @@ async function assertBilling() {
 
 type ActionResult = { ok: boolean; url?: string; message?: string; demo?: boolean; clientSecret?: string; paymentIntentId?: string };
 
+export async function startFreeTrialAction(): Promise<ActionResult> {
+  const session = await assertBilling();
+  const now = new Date();
+  const trialEndsAt = new Date(now.getTime() + 30 * 86_400_000);
+
+  if (isDatabaseConfigured()) {
+    await prisma.subscription.upsert({
+      where: { organizationId: session.organization.id },
+      update: {
+        planId: "trial",
+        status: "trialing",
+        interval: "monthly",
+        trialStartedAt: now,
+        trialEndsAt,
+        currentPeriodEnd: trialEndsAt,
+        cancelAtPeriodEnd: false
+      },
+      create: {
+        organizationId: session.organization.id,
+        stripeSubscriptionId: `trial_${session.organization.id}`,
+        planId: "trial",
+        status: "trialing",
+        interval: "monthly",
+        trialStartedAt: now,
+        trialEndsAt,
+        currentPeriodEnd: trialEndsAt
+      }
+    });
+  }
+
+  return { ok: true, message: "Free trial activated. No credit card required." };
+}
+
 /**
  * Start a subscription via a Stripe Checkout Session in subscription mode.
  * Falls back to a demo acknowledgement when Stripe or the plan price is unset.
  */
-export async function startSubscriptionAction(planId: string): Promise<ActionResult> {
+export async function startSubscriptionAction(planId: string, interval: BillingInterval = "monthly"): Promise<ActionResult> {
   const session = await assertBilling();
   const plan = getPlan(planId);
+  const priceId = plan ? getStripePriceId(plan, interval) : undefined;
 
-  if (!plan) {
+  if (!plan || plan.id === "trial") {
     return { ok: false, message: "Unknown plan." };
   }
 
-  if (!isStripeConfigured() || !plan.stripePriceId) {
+  if (!isStripeConfigured() || !priceId) {
     return {
       ok: true,
       demo: true,
-      message: `Demo mode: ${plan.name} plan selected. Add STRIPE_SECRET_KEY and a price id to enable live checkout.`
+      message: `Demo mode: ${plan.name} ${interval} plan selected. Add Stripe price ids to enable live checkout.`
     };
   }
 
@@ -50,11 +84,13 @@ export async function startSubscriptionAction(planId: string): Promise<ActionRes
   const checkout = await stripe.checkout.sessions.create({
     mode: "subscription",
     customer,
-    line_items: [{ price: plan.stripePriceId, quantity: 1 }],
+    line_items: [{ price: priceId, quantity: 1 }],
+    allow_promotion_codes: true,
+    customer_update: { address: "auto", name: "auto" },
     subscription_data: {
-      metadata: { organizationId: session.organization.id, planId: plan.id }
+      metadata: { organizationId: session.organization.id, planId: plan.id, interval }
     },
-    metadata: { organizationId: session.organization.id, planId: plan.id, kind: "subscription" },
+    metadata: { organizationId: session.organization.id, planId: plan.id, interval, kind: "subscription" },
     success_url: `${appUrl()}/dashboard?billing=subscribed`,
     cancel_url: `${appUrl()}/dashboard?billing=cancelled`
   });

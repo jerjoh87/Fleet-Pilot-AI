@@ -9,7 +9,9 @@ import {
   Car,
   CheckCircle2,
   CircleDollarSign,
+  Clock,
   CreditCard,
+  Download,
   ExternalLink,
   Gauge,
   HelpCircle,
@@ -19,6 +21,7 @@ import {
   Menu,
   Plus,
   Save,
+  Landmark,
   Search,
   Settings,
   Sparkles,
@@ -37,41 +40,56 @@ import {
 } from "recharts";
 import { toast } from "sonner";
 import { archiveVehicleAction, createAvailabilityBlockAction, createContractAction, createCustomerAction, createDamageReportAction, createMaintenanceAction, createReservationAction, createVehicleAction, deleteAvailabilityBlockAction, updateVehicleAction, updateWebsiteSettingsAction } from "@/app/dashboard/actions";
+import { openConnectDashboardAction, removeBankAccountAction, saveAgreementTemplateAction, saveBankingInfoAction, startConnectOnboardingAction } from "@/app/dashboard/financials/actions";
 import { AiWorkspace } from "@/components/fleetpilot/ai-workspace";
 import { BillingPanel } from "@/components/fleetpilot/billing-panel";
+import { InsurancePanel } from "@/components/fleetpilot/insurance-panel";
+import { ShieldCheck } from "lucide-react";
+import type { InsuranceDashboard } from "@/lib/insurance/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { availabilityBlockSchema, customerSchema, damageReportSchema, maintenanceSchema, reservationSchema, vehicleSchema, vehicleUpdateSchema } from "@/lib/schemas";
-import type { Activity as ActivityItem, AvailabilityBlock, Customer, MaintenanceItem, Reservation, Vehicle, VehicleStatus } from "@/lib/types";
+import type { Activity as ActivityItem, AgreementTemplateData, AvailabilityBlock, BankAccount, Customer, FinancialSummary, FinancialTransaction, MaintenanceItem, PayoutRecord, RentalAgreementRecord, Reservation, SubscriptionInfo, UsageMetrics, Vehicle, VehicleStatus } from "@/lib/types";
 import type { AppSession } from "@/lib/auth/session";
 import type { WebsiteSettingsData } from "@/lib/data/dashboard-data";
 import { HostProfilePreview, type ProfileDraft } from "@/components/fleetpilot/host-profile-preview";
 import { currency, number } from "@/lib/utils";
 
-type Section = "Landing Page" | "Operations Dashboard" | "Fleet Management" | "Booking Portal" | "AI Workspace" | "Billing" | "Analytics" | "Maintenance" | "Settings";
+type Section = "Landing Page" | "Operations Dashboard" | "Fleet Management" | "Booking Portal" | "Financials" | "AI Workspace" | "Billing" | "Insurance" | "Analytics" | "Maintenance" | "Settings";
 
 type Props = {
   initialActivity: ActivityItem[];
   initialAvailabilityBlocks: AvailabilityBlock[];
+  initialAgreementTemplate: AgreementTemplateData;
+  initialBankAccount: BankAccount | null;
   initialCustomers: Customer[];
+  initialFinancialSummary: FinancialSummary;
+  initialFinancialTransactions: FinancialTransaction[];
   initialMaintenance: MaintenanceItem[];
   initialOrganization: { id: string; name: string; slug: string; domain: string; plan: string; satisfaction: number };
+  initialPayouts: PayoutRecord[];
+  initialRentalAgreements: RentalAgreementRecord[];
   initialReservations: Reservation[];
   initialRevenueSeries: Array<{ month: string; revenue: number; bookings: number; profit: number }>;
   initialSession: AppSession;
+  initialSubscriptionInfo: SubscriptionInfo;
+  initialUsageMetrics: UsageMetrics;
   initialWebsiteSettings: WebsiteSettingsData;
   initialVehicles: Vehicle[];
   aiConnected: boolean;
   stripeConnected: boolean;
+  insuranceDashboard: InsuranceDashboard;
 };
 
 const sections: Array<{ name: Section; icon: React.ComponentType<{ className?: string }> }> = [
   { name: "Operations Dashboard", icon: BarChart3 },
   { name: "Fleet Management", icon: Car },
   { name: "Booking Portal", icon: CalendarDays },
+  { name: "Financials", icon: Landmark },
   { name: "AI Workspace", icon: Sparkles },
   { name: "Billing", icon: CreditCard },
+  { name: "Insurance", icon: ShieldCheck },
   { name: "Analytics", icon: Gauge },
   { name: "Maintenance", icon: Wrench },
   { name: "Settings", icon: Settings }
@@ -99,21 +117,36 @@ function splitListInput(value?: string) {
 export function FleetPilotApp({
   initialActivity,
   initialAvailabilityBlocks,
+  initialAgreementTemplate,
+  initialBankAccount,
   initialCustomers,
+  initialFinancialSummary,
+  initialFinancialTransactions,
   initialMaintenance,
   initialOrganization,
+  initialPayouts,
+  initialRentalAgreements,
   initialReservations,
   initialRevenueSeries,
   initialSession,
+  initialSubscriptionInfo,
+  initialUsageMetrics,
   initialWebsiteSettings,
   initialVehicles,
   aiConnected,
-  stripeConnected
+  stripeConnected,
+  insuranceDashboard
 }: Props) {
   const [section, setSection] = React.useState<Section>("Operations Dashboard");
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
   const [vehicles, setVehicles] = React.useState(initialVehicles);
   const [availabilityBlocks, setAvailabilityBlocks] = React.useState(initialAvailabilityBlocks);
+  const [bankAccount, setBankAccount] = React.useState(initialBankAccount);
+  const [financialTransactions] = React.useState(initialFinancialTransactions);
+  const [financialSummary] = React.useState(initialFinancialSummary);
+  const [payouts] = React.useState(initialPayouts);
+  const [rentalAgreements] = React.useState(initialRentalAgreements);
+  const [agreementTemplate] = React.useState(initialAgreementTemplate);
   const [customers, setCustomers] = React.useState(initialCustomers);
   const [reservations, setReservations] = React.useState(initialReservations);
   const [maintenanceItems, setMaintenanceItems] = React.useState(initialMaintenance);
@@ -410,6 +443,86 @@ export function FleetPilotApp({
     }
   }
 
+  async function startConnectOnboarding() {
+    try {
+      const result = await startConnectOnboardingAction();
+      if (result.url) {
+        window.location.href = result.url;
+        return;
+      }
+      toast.success(result.message ?? "Stripe Connect onboarding started");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Connect onboarding could not start");
+    }
+  }
+
+  async function openConnectDashboard() {
+    try {
+      const result = await openConnectDashboardAction();
+      if (result.url) {
+        window.location.href = result.url;
+        return;
+      }
+      toast.success(result.message ?? "Opening Stripe Express dashboard");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Stripe dashboard could not open");
+    }
+  }
+
+  async function saveBankingInfo(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    try {
+      const result = await saveBankingInfoAction({
+        accountHolderName: String(form.get("accountHolderName") ?? ""),
+        businessName: String(form.get("businessName") ?? ""),
+        accountType: String(form.get("accountType") ?? "checking") as "checking" | "savings",
+        routingNumber: String(form.get("routingNumber") ?? ""),
+        accountNumber: String(form.get("accountNumber") ?? ""),
+        taxStatus: String(form.get("taxStatus") ?? "pending")
+      });
+      setBankAccount({
+        id: `bank_${crypto.randomUUID()}`,
+        organizationId,
+        accountHolderName: String(form.get("accountHolderName") ?? ""),
+        businessName: String(form.get("businessName") ?? ""),
+        accountType: String(form.get("accountType") ?? "checking"),
+        bankName: "Connected bank",
+        last4: String(form.get("accountNumber") ?? "").slice(-4),
+        routingLast4: String(form.get("routingNumber") ?? "").slice(-4),
+        verificationStatus: "pending_verification",
+        payoutSchedule: "automatic_daily",
+        nextPayoutDate: new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10),
+        estimatedPayout: financialSummary.nextPayout
+      });
+      toast.success(result.message ?? "Banking info saved");
+      formElement.reset();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Banking info could not be saved");
+    }
+  }
+
+  async function removeBankAccount() {
+    try {
+      const result = await removeBankAccountAction();
+      setBankAccount(null);
+      toast.success(result.message ?? "Bank removed");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Bank account could not be removed");
+    }
+  }
+
+  async function saveAgreementTemplate(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      const result = await saveAgreementTemplateAction(new FormData(event.currentTarget));
+      toast.success(result.message ?? "Agreement template saved");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Agreement template could not be saved");
+    }
+  }
+
   async function updateWebsiteSettings(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formElement = event.currentTarget;
@@ -545,6 +658,21 @@ export function FleetPilotApp({
             {section === "Booking Portal" ? (
               <BookingPortal customers={scopedCustomers} vehicles={scopedVehicles} reservations={scopedReservations} onCreateContract={createContract} onCreateCustomer={createCustomer} onCreateReservation={createReservation} />
             ) : null}
+            {section === "Financials" ? (
+              <FinancialsPanel
+                agreementTemplate={agreementTemplate}
+                bankAccount={bankAccount}
+                financialSummary={financialSummary}
+                payouts={payouts}
+                rentalAgreements={rentalAgreements}
+                transactions={financialTransactions}
+                onAgreementSave={saveAgreementTemplate}
+                onBankSave={saveBankingInfo}
+                onConnect={startConnectOnboarding}
+                onOpenStripeDashboard={openConnectDashboard}
+                onRemoveBank={removeBankAccount}
+              />
+            ) : null}
             {section === "AI Workspace" ? (
               <AiWorkspace
                 aiConnected={aiConnected}
@@ -555,8 +683,15 @@ export function FleetPilotApp({
               />
             ) : null}
             {section === "Billing" ? (
-              <BillingPanel customers={scopedCustomers} reservations={scopedReservations} stripeConnected={stripeConnected} />
+              <BillingPanel
+                customers={scopedCustomers}
+                reservations={scopedReservations}
+                stripeConnected={stripeConnected}
+                subscriptionInfo={initialSubscriptionInfo}
+                usageMetrics={initialUsageMetrics}
+              />
             ) : null}
+            {section === "Insurance" ? <InsurancePanel data={insuranceDashboard} /> : null}
             {section === "Analytics" ? <Analytics revenueSeries={initialRevenueSeries} vehicles={scopedVehicles} /> : null}
             {section === "Maintenance" ? <Maintenance maintenance={maintenanceItems} reservations={scopedReservations} vehicles={scopedVehicles} onCreateDamageReport={createDamageReport} onCreateMaintenance={createMaintenance} /> : null}
             {section === "Settings" ? <SettingsPanel organization={initialOrganization} settings={websiteSettings} onSave={updateWebsiteSettings} /> : null}
@@ -1037,6 +1172,272 @@ function BookingPortal({
         </Panel>
       </div>
     </div>
+  );
+}
+
+type FinancialTab = "Overview" | "Transactions" | "Payouts" | "Banking" | "Taxes" | "Reports";
+
+function FinancialsPanel({
+  agreementTemplate,
+  bankAccount,
+  financialSummary,
+  payouts,
+  rentalAgreements,
+  transactions,
+  onAgreementSave,
+  onBankSave,
+  onConnect,
+  onOpenStripeDashboard,
+  onRemoveBank
+}: {
+  agreementTemplate: AgreementTemplateData;
+  bankAccount: BankAccount | null;
+  financialSummary: FinancialSummary;
+  payouts: PayoutRecord[];
+  rentalAgreements: RentalAgreementRecord[];
+  transactions: FinancialTransaction[];
+  onAgreementSave: (event: React.FormEvent<HTMLFormElement>) => void;
+  onBankSave: (event: React.FormEvent<HTMLFormElement>) => void;
+  onConnect: () => void;
+  onOpenStripeDashboard: () => void;
+  onRemoveBank: () => void;
+}) {
+  const [tab, setTab] = React.useState<FinancialTab>("Overview");
+  const [query, setQuery] = React.useState("");
+  const tabs: FinancialTab[] = ["Overview", "Transactions", "Payouts", "Banking", "Taxes", "Reports"];
+  const filteredTransactions = transactions.filter((transaction) =>
+    `${transaction.reservationId} ${transaction.customerName} ${transaction.vehicleLabel} ${transaction.status}`.toLowerCase().includes(query.toLowerCase())
+  );
+
+  function exportCsv() {
+    const header = ["Booking ID", "Customer", "Vehicle", "Gross", "Platform Fee", "Processing Fee", "Insurance", "Taxes", "Net Payout", "Status"];
+    const rows = filteredTransactions.map((item) => [
+      item.reservationId,
+      item.customerName,
+      item.vehicleLabel,
+      item.grossAmount,
+      item.platformFee,
+      item.processingFee,
+      item.insuranceRevenue,
+      item.taxes,
+      item.netPayout,
+      item.status
+    ]);
+    const csv = [header, ...rows].map((row) => row.map((cell) => `"${String(cell).replaceAll("\"", "\"\"")}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "fleetpilot-transactions.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-end">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight text-white">Financials</h1>
+          <p className="mt-2 text-slate-400">Payouts, banking, transactions, taxes, reports, and rental agreement records.</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button className="bg-blue-500 text-white hover:bg-blue-400" type="button" onClick={onConnect}>Connect bank</Button>
+          <Button variant="outline" className="border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]" type="button" onClick={onOpenStripeDashboard}>
+            Stripe Express
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex gap-2 overflow-x-auto rounded-2xl border border-white/10 bg-white/[0.035] p-2">
+        {tabs.map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => setTab(item)}
+            className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-medium ${tab === item ? "bg-blue-500 text-white" : "text-slate-300 hover:bg-white/[0.06]"}`}
+          >
+            {item}
+          </button>
+        ))}
+      </div>
+
+      {tab === "Overview" ? (
+        <>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <Kpi label="Available Balance" value={currency.format(financialSummary.availableBalance)} detail="Ready for payout" icon={CircleDollarSign} tone="emerald" />
+            <Kpi label="Pending Balance" value={currency.format(financialSummary.pendingBalance)} detail="Processing bookings" icon={Clock} tone="amber" />
+            <Kpi label="Lifetime Earnings" value={currency.format(financialSummary.lifetimeEarnings)} detail="Net payouts" icon={BarChart3} tone="indigo" />
+            <Kpi label="Next Payout" value={currency.format(financialSummary.nextPayout)} detail={bankAccount?.nextPayoutDate || "Connect banking"} icon={Landmark} tone="blue" />
+          </div>
+          <div className="grid gap-6 xl:grid-cols-2">
+            <Panel title="Monthly Revenue"><OperationsChart compact /></Panel>
+            <Panel title="Payout History">
+              <div className="space-y-3">
+                {payouts.slice(0, 6).map((payout) => (
+                  <div key={payout.id} className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                    <div>
+                      <p className="font-medium text-white">{currency.format(payout.amount)}</p>
+                      <p className="text-xs text-slate-400">{payout.arrivalDate || payout.createdAt.slice(0, 10)}</p>
+                    </div>
+                    <span className="rounded-full border border-emerald-400/30 bg-emerald-400/10 px-3 py-1 text-xs text-emerald-200">{payout.status}</span>
+                  </div>
+                ))}
+                {!payouts.length ? <p className="text-sm text-slate-500">No payouts yet. Completed bookings will appear here.</p> : null}
+              </div>
+            </Panel>
+          </div>
+        </>
+      ) : null}
+
+      {tab === "Transactions" ? (
+        <Panel title="Transaction History">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row">
+            <DarkInput value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search booking, customer, vehicle, status" />
+            <Button type="button" className="bg-blue-500 text-white hover:bg-blue-400" onClick={exportCsv}><Download className="size-4" />Export CSV</Button>
+            <Button type="button" variant="outline" className="border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]" onClick={() => window.print()}>Export PDF</Button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[980px] text-sm">
+              <thead className="text-left text-xs uppercase tracking-[0.18em] text-slate-500">
+                <tr>{["Booking ID", "Customer", "Vehicle", "Gross", "Platform", "Processing", "Insurance", "Taxes", "Net", "Status"].map((head) => <th key={head} className="pb-4">{head}</th>)}</tr>
+              </thead>
+              <tbody className="divide-y divide-white/10">
+                {filteredTransactions.map((item) => (
+                  <tr key={item.id}>
+                    <td className="py-4 font-mono text-xs text-slate-300">{item.reservationId}</td>
+                    <td className="py-4 text-white">{item.customerName}</td>
+                    <td className="py-4 text-slate-300">{item.vehicleLabel}</td>
+                    <td className="py-4 text-slate-300">{currency.format(item.grossAmount)}</td>
+                    <td className="py-4 text-slate-300">{currency.format(item.platformFee)}</td>
+                    <td className="py-4 text-slate-300">{currency.format(item.processingFee)}</td>
+                    <td className="py-4 text-slate-300">{currency.format(item.insuranceRevenue)}</td>
+                    <td className="py-4 text-slate-300">{currency.format(item.taxes)}</td>
+                    <td className="py-4 font-medium text-emerald-200">{currency.format(item.netPayout)}</td>
+                    <td className="py-4 text-slate-300">{item.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      ) : null}
+
+      {tab === "Payouts" || tab === "Banking" ? (
+        <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+          <Panel title="Connected Bank">
+            {bankAccount ? (
+              <div className="space-y-3">
+                {[
+                  ["Bank", bankAccount.bankName],
+                  ["Last four", bankAccount.last4 ? `•••• ${bankAccount.last4}` : "Pending"],
+                  ["Routing", bankAccount.routingLast4 ? `•••• ${bankAccount.routingLast4}` : "Pending"],
+                  ["Verification", bankAccount.verificationStatus],
+                  ["Next payout", bankAccount.nextPayoutDate || "Pending"],
+                  ["Schedule", bankAccount.payoutSchedule],
+                  ["Estimated payout", currency.format(bankAccount.estimatedPayout)]
+                ].map(([label, value]) => (
+                  <div key={label} className="flex justify-between rounded-xl border border-white/10 bg-white/[0.035] p-3 text-sm">
+                    <span className="text-slate-400">{label}</span>
+                    <span className="font-medium text-white">{value}</span>
+                  </div>
+                ))}
+                <Button type="button" variant="destructive" onClick={onRemoveBank}>Remove bank</Button>
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400">No bank account connected yet. Start Stripe Connect onboarding or enter bank details for verification.</p>
+            )}
+          </Panel>
+          <Panel title="Banking Setup">
+            <form className="grid gap-3 md:grid-cols-2" onSubmit={onBankSave}>
+              <DarkInput name="accountHolderName" placeholder="Account holder name" required />
+              <DarkInput name="businessName" placeholder="Business name" required />
+              <DarkInput name="routingNumber" inputMode="numeric" placeholder="Routing number" required />
+              <DarkInput name="accountNumber" inputMode="numeric" placeholder="Account number" required />
+              <DarkSelect name="accountType" defaultValue="checking">
+                <option value="checking">Checking</option>
+                <option value="savings">Savings</option>
+              </DarkSelect>
+              <DarkSelect name="taxStatus" defaultValue="pending">
+                <option value="pending">Tax info pending</option>
+                <option value="submitted">Tax info submitted</option>
+                <option value="verified">Tax info verified</option>
+              </DarkSelect>
+              <Button className="bg-blue-500 text-white hover:bg-blue-400 md:col-span-2" type="submit">Save banking details</Button>
+            </form>
+            <p className="mt-3 text-xs text-slate-500">Routing and account numbers are sent to Stripe for tokenization and are never stored by FleetPilot.</p>
+          </Panel>
+        </div>
+      ) : null}
+
+      {tab === "Taxes" || tab === "Reports" ? (
+        <div className="grid gap-6 xl:grid-cols-2">
+          <Panel title="Tax Summary">
+            <div className="grid gap-3">
+              <Health label="Gross revenue" value={currency.format(financialSummary.totalRevenue)} pct={100} />
+              <Health label="Platform fees" value={currency.format(financialSummary.platformFees)} pct={Math.min(100, financialSummary.platformFees)} />
+              <Health label="Processing fees" value={currency.format(financialSummary.processingFees)} pct={Math.min(100, financialSummary.processingFees)} />
+              <Health label="Refunds" value={currency.format(financialSummary.refunds)} pct={Math.min(100, financialSummary.refunds)} />
+            </div>
+          </Panel>
+          <Panel title="Signed Agreements">
+            <div className="space-y-3">
+              {rentalAgreements.slice(0, 8).map((agreement) => (
+                <div key={agreement.id} className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+                  <div>
+                    <p className="font-medium text-white">{agreement.customerName} · {agreement.vehicleLabel}</p>
+                    <p className="text-xs text-slate-400">Version {agreement.version} · {agreement.signedAt.slice(0, 10)} · {agreement.signatureMethod}</p>
+                  </div>
+                  <a className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white hover:bg-white/[0.08]" href={agreement.pdfUrl} target="_blank" rel="noreferrer">PDF</a>
+                </div>
+              ))}
+              {!rentalAgreements.length ? <p className="text-sm text-slate-500">Signed agreements will appear after customer checkout.</p> : null}
+            </div>
+          </Panel>
+          <Panel title="Rental Agreement Builder">
+            <AgreementTemplateForm template={agreementTemplate} onSave={onAgreementSave} />
+          </Panel>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function AgreementTemplateForm({ template, onSave }: { template: AgreementTemplateData; onSave: (event: React.FormEvent<HTMLFormElement>) => void }) {
+  const fields: Array<[keyof AgreementTemplateData, string, "input" | "textarea"]> = [
+    ["businessName", "Business name", "input"],
+    ["businessAddress", "Business address", "input"],
+    ["phone", "Phone", "input"],
+    ["email", "Email", "input"],
+    ["terms", "Terms & Conditions", "textarea"],
+    ["mileagePolicy", "Mileage policy", "textarea"],
+    ["fuelPolicy", "Fuel policy", "textarea"],
+    ["smokingPolicy", "Smoking policy", "textarea"],
+    ["petPolicy", "Pet policy", "textarea"],
+    ["lateReturnPolicy", "Late return policy", "textarea"],
+    ["cleaningFee", "Cleaning fee", "textarea"],
+    ["damagePolicy", "Damage policy", "textarea"],
+    ["insuranceTerms", "Insurance terms", "textarea"],
+    ["roadsideAssistance", "Roadside assistance", "textarea"],
+    ["securityDeposit", "Security deposit", "textarea"],
+    ["cancellationPolicy", "Cancellation policy", "textarea"],
+    ["prohibitedUses", "Prohibited uses", "textarea"],
+    ["stateClauses", "State-specific clauses", "textarea"],
+    ["signatureDisclosure", "Digital signature disclosure", "textarea"]
+  ];
+
+  return (
+    <form className="grid max-h-[640px] gap-3 overflow-y-auto pr-2" onSubmit={onSave}>
+      {fields.map(([name, label, kind]) => (
+        <label key={name} className="grid gap-2 text-sm">
+          <span className="text-slate-300">{label}</span>
+          {kind === "input" ? (
+            <DarkInput name={name} defaultValue={String(template[name] ?? "")} required={name === "businessName"} />
+          ) : (
+            <DarkTextarea name={name} defaultValue={String(template[name] ?? "")} required />
+          )}
+        </label>
+      ))}
+      <Button className="bg-blue-500 text-white hover:bg-blue-400" type="submit">Save legal version</Button>
+    </form>
   );
 }
 

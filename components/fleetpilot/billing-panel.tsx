@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, CreditCard, ExternalLink, Info, Loader2, ReceiptText, ShieldCheck, Sparkles } from "lucide-react";
+import { AlertTriangle, Check, CreditCard, ExternalLink, Info, Loader2, ReceiptText, ShieldCheck, Sparkles } from "lucide-react";
 import { loadStripe, type Stripe, type StripeElements } from "@stripe/stripe-js";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -14,16 +14,20 @@ import {
   openBillingPortalAction,
   refundPaymentAction,
   releaseDepositAction,
+  startFreeTrialAction,
   startSubscriptionAction
 } from "@/app/dashboard/billing/actions";
-import { billingPlans } from "@/lib/billing/plans";
-import type { Customer, Reservation } from "@/lib/types";
+import { type BillingInterval, billingPlans } from "@/lib/billing/plans";
+import { FeaturePaywall, findPlan } from "@/components/fleetpilot/paywall";
+import type { Customer, Reservation, SubscriptionInfo, UsageMetrics } from "@/lib/types";
 import { currency } from "@/lib/utils";
 
 type Props = {
   reservations: Reservation[];
   customers: Customer[];
+  subscriptionInfo: SubscriptionInfo;
   stripeConnected: boolean;
+  usageMetrics: UsageMetrics;
 };
 
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
@@ -38,9 +42,12 @@ type DepositIntent = {
   customerEmail: string;
 };
 
-export function BillingPanel({ reservations, customers, stripeConnected }: Props) {
+export function BillingPanel({ reservations, customers, subscriptionInfo, stripeConnected, usageMetrics }: Props) {
   const [busy, setBusy] = React.useState<string | null>(null);
   const [depositIntent, setDepositIntent] = React.useState<DepositIntent | null>(null);
+  const [interval, setInterval] = React.useState<BillingInterval>("monthly");
+  const currentPlan = findPlan(subscriptionInfo.planId);
+  const trialEndingSoon = subscriptionInfo.planId === "trial" && subscriptionInfo.trialDaysRemaining <= 7;
 
   function handleResult(result: { ok: boolean; url?: string; message?: string; demo?: boolean }, fallback: string) {
     if (result.url) {
@@ -155,14 +162,67 @@ export function BillingPanel({ reservations, customers, stripeConnected }: Props
         </div>
       ) : null}
 
-      {/* Subscription plans */}
-      <Panel title="Subscription plan">
+      <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+        <Panel title="Current plan">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Plan</p>
+              <p className="mt-2 text-2xl font-black text-white">{subscriptionInfo.planName}</p>
+              <p className="mt-1 text-sm text-slate-400">{subscriptionInfo.status} · {subscriptionInfo.interval}</p>
+            </div>
+            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">{subscriptionInfo.planId === "trial" ? "Trial ends" : "Renews"}</p>
+              <p className="mt-2 text-2xl font-black text-white">
+                {subscriptionInfo.planId === "trial" ? `${subscriptionInfo.trialDaysRemaining} days` : new Date(subscriptionInfo.currentPeriodEnd).toLocaleDateString()}
+              </p>
+              <p className="mt-1 text-sm text-slate-400">Next invoice {currency.format(subscriptionInfo.nextInvoiceAmount)}</p>
+            </div>
+          </div>
+          {trialEndingSoon ? (
+            <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-400/20 bg-amber-400/10 p-4 text-sm text-amber-100">
+              <AlertTriangle className="mt-0.5 size-4" />
+              Your trial is almost over. Upgrade now to keep booking, payments, AI tools, and your public booking site active.
+            </div>
+          ) : null}
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button className="bg-blue-500 text-white hover:bg-blue-400" type="button" disabled={busy === "trial"} onClick={() => withBusy("trial", async () => handleResult(await startFreeTrialAction(), "Trial activated"))}>
+              Start free trial
+            </Button>
+            <Button variant="outline" className="border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]" disabled={busy === "portal"} onClick={() => withBusy("portal", async () => handleResult(await openBillingPortalAction(), "Opening portal"))}>
+              <CreditCard className="size-4" /> Manage billing
+            </Button>
+          </div>
+        </Panel>
+
+        <Panel title="Usage">
+          <div className="grid gap-3">
+            <UsageBar label="Vehicles" value={usageMetrics.vehicles} limit={currentPlan.limits.vehicles} />
+            <UsageBar label="Staff accounts" value={usageMetrics.staff} limit={currentPlan.limits.staff} />
+            <UsageBar label="Business locations" value={usageMetrics.locations} limit={currentPlan.limits.locations} />
+            <UsageBar label="AI requests" value={usageMetrics.aiRequests} limit={currentPlan.limits.aiRequests} />
+            <UsageBar label="Storage" value={usageMetrics.storageGb} limit={currentPlan.limits.storageGb} suffix="GB" />
+            <UsageBar label="API usage" value={usageMetrics.apiRequests} limit={currentPlan.limits.apiRequests} />
+          </div>
+        </Panel>
+      </div>
+
+      <Panel title="Upgrade options">
+        <div className="mb-4 inline-flex rounded-xl border border-white/10 bg-white/[0.04] p-1">
+          {(["monthly", "annual"] as BillingInterval[]).map((item) => (
+            <button key={item} type="button" onClick={() => setInterval(item)} className={`rounded-lg px-4 py-2 text-sm font-medium ${interval === item ? "bg-blue-500 text-white" : "text-slate-300"}`}>
+              {item === "annual" ? "Annual · 2 months free" : "Monthly"}
+            </button>
+          ))}
+        </div>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {billingPlans.map((plan) => (
             <div key={plan.id} className={`flex flex-col rounded-2xl border p-5 ${plan.featured ? "border-blue-400/50 bg-blue-500/10" : "border-white/10 bg-white/[0.04]"}`}>
               {plan.featured ? <span className="mb-2 w-fit rounded-full bg-blue-500 px-2.5 py-0.5 text-xs text-white">Popular</span> : null}
               <h3 className="text-lg font-bold text-white">{plan.name}</h3>
-              <p className="mt-2 text-2xl font-black text-white">{plan.priceLabel}<span className="text-sm font-normal text-slate-400">{plan.cadence}</span></p>
+              <p className="mt-2 text-2xl font-black text-white">
+                {interval === "annual" ? plan.annualLabel : plan.priceLabel}
+                <span className="text-sm font-normal text-slate-400">{plan.id === "trial" ? ` · ${plan.cadence}` : interval === "annual" ? "/yr" : plan.cadence}</span>
+              </p>
               <ul className="mt-4 flex flex-1 flex-col gap-2 text-xs text-slate-300">
                 {plan.features.map((feature) => (
                   <li key={feature} className="flex items-center gap-2"><Check className="size-3.5 text-emerald-300" />{feature}</li>
@@ -171,20 +231,22 @@ export function BillingPanel({ reservations, customers, stripeConnected }: Props
               <Button
                 className="mt-5 bg-blue-500 text-white hover:bg-blue-400"
                 disabled={busy === `sub-${plan.id}`}
-                onClick={() => withBusy(`sub-${plan.id}`, async () => handleResult(await startSubscriptionAction(plan.id), "Plan selected"))}
+                onClick={() => withBusy(`sub-${plan.id}`, async () => handleResult(plan.id === "trial" ? await startFreeTrialAction() : await startSubscriptionAction(plan.id, interval), "Plan selected"))}
               >
                 {busy === `sub-${plan.id}` ? <Loader2 className="size-4 animate-spin" /> : <Sparkles className="size-4" />}
-                {plan.id === "enterprise" ? "Contact sales" : "Choose plan"}
+                {plan.id === subscriptionInfo.planId ? "Current plan" : plan.id === "trial" ? "Start trial" : "Upgrade Now"}
               </Button>
             </div>
           ))}
         </div>
-        <div className="mt-4">
-          <Button variant="outline" className="border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]" disabled={busy === "portal"} onClick={() => withBusy("portal", async () => handleResult(await openBillingPortalAction(), "Opening portal"))}>
-            <CreditCard className="size-4" /> Manage subscription
-          </Button>
-        </div>
       </Panel>
+
+      <FeaturePaywall
+        currentPlan={currentPlan}
+        feature="Premium features and usage limits"
+        benefits={["Vehicle and staff limit increases", "GPS, Marketing Studio, and analytics unlocks", "White-label, API, and premium AI on Pro"]}
+        onUpgrade={(planId) => withBusy(`sub-${planId}`, async () => handleResult(await startSubscriptionAction(planId, interval), "Plan selected"))}
+      />
 
       <div className="grid gap-6 xl:grid-cols-2">
         {/* Deposit holds */}
@@ -365,6 +427,36 @@ function DepositPaymentElement({
         {submitting ? <Loader2 className="size-4 animate-spin" /> : <ShieldCheck className="size-4" />}
         Authorize deposit
       </Button>
+    </div>
+  );
+}
+
+function UsageBar({
+  label,
+  value,
+  limit,
+  suffix = ""
+}: {
+  label: string;
+  value: number;
+  limit: number | null;
+  suffix?: string;
+}) {
+  const unlimited = limit === null;
+  const pct = unlimited ? 12 : Math.min(100, Math.round((value / Math.max(1, limit)) * 100));
+  const warning = !unlimited && pct >= 80;
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
+      <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+        <span className="font-medium text-white">{label}</span>
+        <span className={warning ? "text-amber-200" : "text-slate-400"}>
+          {value.toLocaleString()}{suffix ? ` ${suffix}` : ""} / {unlimited ? "Unlimited" : `${limit.toLocaleString()}${suffix ? ` ${suffix}` : ""}`}
+        </span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-white/10">
+        <div className={`h-full rounded-full ${warning ? "bg-amber-300" : "bg-blue-500"}`} style={{ width: `${pct}%` }} />
+      </div>
     </div>
   );
 }

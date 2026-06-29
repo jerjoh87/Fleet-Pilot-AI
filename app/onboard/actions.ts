@@ -14,7 +14,8 @@ const onboardSchema = z.object({
   serviceArea: z.string().max(120).optional(),
   backgroundStyle: z.enum(["soft", "solid", "cover"]).default("soft"),
   brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
-  depositFee: z.coerce.number().min(0).max(10000).default(250)
+  depositFee: z.coerce.number().min(0).max(10000).default(250),
+  tosAccepted: z.literal("on", { message: "You must accept the Terms of Service to continue." })
 });
 
 export async function createOrganizationAction(formData: FormData) {
@@ -34,7 +35,8 @@ export async function createOrganizationAction(formData: FormData) {
     serviceArea: String(formData.get("serviceArea") || ""),
     backgroundStyle: (formData.get("backgroundStyle") as string) || "soft",
     brandColor: String(formData.get("brandColor") || "#166534"),
-    depositFee: formData.get("depositFee") ?? 250
+    depositFee: formData.get("depositFee") ?? 250,
+    tosAccepted: formData.get("tosAccepted") ?? ""
   });
 
   await prisma.$transaction(async (tx) => {
@@ -52,7 +54,8 @@ export async function createOrganizationAction(formData: FormData) {
         members: {
           create: {
             userId: user.id,
-            role: "OWNER"
+            role: "OWNER",
+            tosAcceptedAt: new Date()
           }
         },
         websiteSettings: {

@@ -6,26 +6,55 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
+
+function safeNext(value: string | null) {
+  const next = value ?? "/dashboard";
+  return next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
+}
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
+  const code = searchParams.get("code");
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type");
-  const next = searchParams.get("next") ?? "/onboard";
+  let next = safeNext(searchParams.get("next"));
 
-  if (!isSupabaseConfigured() || !token_hash || !type) {
+  if (!isSupabaseConfigured()) {
     return NextResponse.redirect(`${origin}/dashboard`);
   }
 
   try {
     const supabase = await createSupabaseServerClient();
-    const { error } = await supabase.auth.verifyOtp({
-      type: type as Parameters<typeof supabase.auth.verifyOtp>[0]["type"],
-      token_hash
-    });
+    const { error } = code
+      ? await supabase.auth.exchangeCodeForSession(code)
+      : token_hash && type
+        ? await supabase.auth.verifyOtp({
+            type: type as Parameters<typeof supabase.auth.verifyOtp>[0]["type"],
+            token_hash
+          })
+        : { error: new Error("Missing confirmation token.") };
 
     if (error) {
       return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);
+    }
+
+    if (isDatabaseConfigured()) {
+      const { data } = await supabase.auth.getUser();
+      const authUser = data.user;
+      if (authUser) {
+        const email = authUser.email ?? "";
+        const fullName = String(authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? email);
+        const user = await prisma.user.upsert({
+          where: { id: authUser.id },
+          update: { email, fullName },
+          create: { id: authUser.id, email, fullName },
+          include: { memberships: { take: 1 } }
+        });
+        if (!user.memberships.length) {
+          next = "/onboard";
+        }
+      }
     }
   } catch {
     return NextResponse.redirect(`${origin}/login?error=Confirmation+failed`);

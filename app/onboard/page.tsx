@@ -4,6 +4,8 @@ import { createOrganizationAction } from "@/app/onboard/actions";
 import { getAppSession, requireAuthenticatedUser, slugifyOrganizationName } from "@/lib/auth/session";
 import { isDatabaseConfigured } from "@/lib/db/prisma";
 
+type Href = Parameters<typeof Link>[0]["href"];
+
 export const dynamic = "force-dynamic";
 
 export default async function OnboardPage() {
@@ -86,6 +88,17 @@ export default async function OnboardPage() {
             <label className="grid gap-2 text-sm">
               <span className="text-slate-300">Default security deposit</span>
               <input name="depositFee" type="number" min="0" step="1" defaultValue={250} className="h-11 rounded-lg border border-white/10 bg-white/[0.04] px-3 text-white outline-none focus:ring-2 focus:ring-blue-500" required />
+            </label>
+            <label className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] p-4 text-sm leading-6">
+              <input name="tosAccepted" type="checkbox" required className="mt-1 accent-blue-500" />
+              <span className="text-slate-300">
+                I agree to the FleetPilot AI{" "}
+                <Link href={"/legal/terms" as Href} target="_blank" className="text-blue-400 underline">Host Terms of Service</Link>
+                {" "}and{" "}
+                <Link href={"/legal/privacy" as Href} target="_blank" className="text-blue-400 underline">Privacy Policy</Link>.
+                I confirm that I am authorized to list vehicles on this platform, that my vehicles are legally registered,
+                insured, and roadworthy, and that I will comply with all applicable federal, state, and local laws.
+              </span>
             </label>
             <button className="mt-2 rounded-lg bg-blue-500 px-5 py-3 font-medium text-white hover:bg-blue-400">
               Create workspace

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { signInAction, signUpAction } from "@/app/login/actions";
+import { oauthSignInAction, signInAction, signUpAction } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -9,10 +9,11 @@ export const dynamic = "force-dynamic";
 export default async function LoginPage({
   searchParams
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const params = await searchParams;
   const supabaseReady = isSupabaseConfigured();
+  const next = params.next && params.next.startsWith("/") ? params.next : "/dashboard";
 
   return (
     <main className="min-h-screen bg-[#070b16] px-4 py-10 text-slate-100">
@@ -43,7 +44,29 @@ export default async function LoginPage({
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
             <h2 className="text-xl font-semibold text-white">Sign In</h2>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <form action={oauthSignInAction}>
+                <input type="hidden" name="provider" value="google" />
+                <input type="hidden" name="next" value={next} />
+                <Button type="submit" variant="outline" className="w-full border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-white text-xs font-black text-blue-600">G</span>
+                  Continue with Gmail
+                </Button>
+              </form>
+              <form action={oauthSignInAction}>
+                <input type="hidden" name="provider" value="yahoo" />
+                <input type="hidden" name="next" value={next} />
+                <Button type="submit" variant="outline" className="w-full border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-[#6001d2] text-xs font-black text-white">Y!</span>
+                  Continue with Yahoo
+                </Button>
+              </form>
+            </div>
+            <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-slate-500">
+              <span className="h-px flex-1 bg-white/10" /> or email <span className="h-px flex-1 bg-white/10" />
+            </div>
             <form action={signInAction} className="mt-5 grid gap-3">
+              <input type="hidden" name="next" value={next} />
               <Input name="email" type="email" placeholder="Email" required />
               <Input name="password" type="password" placeholder="Password" required />
               <Button className="mt-2 bg-blue-500 text-white hover:bg-blue-400">Sign In</Button>
@@ -52,6 +75,27 @@ export default async function LoginPage({
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5">
             <h2 className="text-xl font-semibold text-white">Create Workspace</h2>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <form action={oauthSignInAction}>
+                <input type="hidden" name="provider" value="google" />
+                <input type="hidden" name="next" value="/onboard" />
+                <Button type="submit" variant="outline" className="w-full border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-white text-xs font-black text-blue-600">G</span>
+                  Sign up with Gmail
+                </Button>
+              </form>
+              <form action={oauthSignInAction}>
+                <input type="hidden" name="provider" value="yahoo" />
+                <input type="hidden" name="next" value="/onboard" />
+                <Button type="submit" variant="outline" className="w-full border-white/10 bg-white/[0.04] text-white hover:bg-white/[0.08]">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-[#6001d2] text-xs font-black text-white">Y!</span>
+                  Sign up with Yahoo
+                </Button>
+              </form>
+            </div>
+            <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-slate-500">
+              <span className="h-px flex-1 bg-white/10" /> or email <span className="h-px flex-1 bg-white/10" />
+            </div>
             <form action={signUpAction} className="mt-5 grid gap-3">
               <Input name="fullName" placeholder="Full name" required />
               <Input name="email" type="email" placeholder="Email" required />

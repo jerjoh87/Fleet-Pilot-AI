@@ -12,8 +12,15 @@ export async function POST(request: Request) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   const signature = request.headers.get("stripe-signature");
 
-  if (!process.env.STRIPE_SECRET_KEY || !secret || !signature) {
+  if (!process.env.STRIPE_SECRET_KEY) {
     return NextResponse.json({ received: true, demo: true });
+  }
+  if (!secret) {
+    console.error("[stripe/webhook] STRIPE_WEBHOOK_SECRET is not set — rejecting webhook. Set this env var in production.");
+    return NextResponse.json({ error: "Webhook secret not configured." }, { status: 500 });
+  }
+  if (!signature) {
+    return NextResponse.json({ error: "Missing stripe-signature header." }, { status: 400 });
   }
 
   const stripe = getStripe();
@@ -61,6 +68,14 @@ async function handleEvent(event: Stripe.Event) {
           data: { status: "CONFIRMED" }
         });
 
+        await prisma.transaction.updateMany({
+          where: { reservationId },
+          data: {
+            status: "available",
+            stripePaymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : null
+          }
+        });
+
         // Payment receipt email
         const reservation = await prisma.reservation.findUnique({
           where: { id: reservationId },
@@ -98,16 +113,39 @@ async function handleEvent(event: Stripe.Event) {
       const subscription = event.data.object as Stripe.Subscription;
       const organizationId = subscription.metadata?.organizationId;
       const planId = subscription.metadata?.planId;
+      const interval = subscription.metadata?.interval ?? "monthly";
       if (!organizationId) break;
 
       const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end;
+      const trialEnd = (subscription as unknown as { trial_end?: number | null }).trial_end;
+      const cancelAtPeriodEnd = Boolean((subscription as unknown as { cancel_at_period_end?: boolean }).cancel_at_period_end);
+      const priceId = subscription.items.data[0]?.price.id;
       const currentPeriodEnd = periodEnd ? new Date(periodEnd * 1000) : new Date();
 
       if (isDatabaseConfigured()) {
         await prisma.subscription.upsert({
           where: { organizationId },
-          update: { status: subscription.status, currentPeriodEnd, stripeSubscriptionId: subscription.id },
-          create: { organizationId, stripeSubscriptionId: subscription.id, status: subscription.status, currentPeriodEnd }
+          update: {
+            status: subscription.status,
+            currentPeriodEnd,
+            stripeSubscriptionId: subscription.id,
+            planId: planId ?? "growth",
+            stripePriceId: priceId,
+            interval,
+            trialEndsAt: trialEnd ? new Date(trialEnd * 1000) : null,
+            cancelAtPeriodEnd
+          },
+          create: {
+            organizationId,
+            stripeSubscriptionId: subscription.id,
+            status: subscription.status,
+            currentPeriodEnd,
+            planId: planId ?? "growth",
+            stripePriceId: priceId,
+            interval,
+            trialEndsAt: trialEnd ? new Date(trialEnd * 1000) : null,
+            cancelAtPeriodEnd
+          }
         });
 
         // Subscription confirm email on creation

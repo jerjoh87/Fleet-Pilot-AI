@@ -75,6 +75,7 @@ model Membership {
   organizationId String
   userId         String
   role           Role
+  tosAcceptedAt  DateTime?
   createdAt      DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -282,6 +283,12 @@ model AgreementTemplate {
   securityDeposit       String
   cancellationPolicy    String
   prohibitedUses        String
+  eligibilityRequirements String?
+  liabilityWaiver       String?
+  disputeResolution     String?
+  governingLaw          String?
+  forceMajeure          String?
+  platformDisclaimer    String?
   stateClauses          String
   signatureDisclosure   String
   activeVersion         Int      @default(1)
@@ -529,6 +536,8 @@ model WebsiteSetting {
   seoTitle       String?
   customDomain   String?
   depositFeeCents Int @default(25000)
+  taxRatePct     Decimal @default(8.0) @db.Decimal(5, 3)
+  platformFeePct Decimal @default(10.0) @db.Decimal(5, 3)
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
@@ -544,7 +553,14 @@ model Subscription {
   id             String @id @default(uuid())
   organizationId String @unique
   stripeSubscriptionId String
+  planId         String @default("trial")
+  stripePriceId  String?
+  interval       String @default("monthly")
   status         String
+  trialStartedAt DateTime?
+  trialEndsAt    DateTime?
+  cancelAtPeriodEnd Boolean @default(false)
+  latestInvoiceUrl String?
   currentPeriodEnd DateTime
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
@@ -570,4 +586,176 @@ model AuditLog {
   metadata       Json?
   createdAt      DateTime @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+// ============================================================================
+// Rental Insurance module
+// Loosely coupled by scalar foreign keys (no enforced relations) so the module
+// is self-contained. Table names map to the product spec's snake_case names.
+// ============================================================================
+
+enum InsuranceSelectionType {
+  THIRD_PARTY   // purchased coverage from a provider (RentalCover/Allianz/Bonzah)
+  CUSTOMER_OWN  // customer uploaded proof of their own policy
+  DECLINED      // declined coverage (only when the org allows it)
+}
+
+enum InsuranceCoverageStatus {
+  PENDING_SELECTION   // booking started, no choice yet
+  ACTIVE              // third-party coverage purchased & active
+  PENDING_UPLOAD      // own-insurance chosen, awaiting documents
+  PENDING_REVIEW      // documents uploaded, awaiting manual approval
+  APPROVED            // own insurance approved
+  REJECTED            // own insurance rejected
+  MORE_INFO_REQUIRED  // owner asked for additional documents
+  DECLINED            // customer declined coverage
+}
+
+enum InsuranceVerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  MORE_INFO_REQUIRED
+}
+
+enum InsuranceDocumentKind {
+  CARD_FRONT
+  CARD_BACK
+  DECLARATION_PAGE
+  RECEIPT
+  OTHER
+}
+
+/// Per-organization configuration of which providers are offered.
+model InsuranceProvider {
+  id             String   @id @default(uuid())
+  organizationId String
+  key            String   // "rentalcover" | "allianz" | "bonzah"
+  name           String
+  enabled        Boolean  @default(true)
+  config         Json?    // future: API credentials / commission settings
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([organizationId, key])
+  @@index([organizationId])
+  @@map("insurance_providers")
+}
+
+/// A purchased third-party policy instance (the result of buying a quoted plan).
+model InsurancePurchase {
+  id              String   @id @default(uuid())
+  organizationId  String
+  reservationId   String?
+  customerId      String?
+  providerKey     String   // "rentalcover" | "allianz" | "bonzah"
+  planId          String   // provider plan identifier
+  planName        String
+  coverageSummary String
+  coverageLimits  Json?    // { liability, collision, ... } in cents
+  deductibleCents Int      @default(0)
+  dailyPriceCents Int
+  totalPriceCents Int
+  policyNumber    String?
+  externalRef     String?  // provider-side policy id once integrated
+  status          InsuranceCoverageStatus @default(ACTIVE)
+  startsAt        DateTime?
+  endsAt          DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([reservationId])
+  @@map("insurance_policies")
+}
+
+/// A customer's submission of their own existing insurance for review.
+model CustomerInsuranceUpload {
+  id               String   @id @default(uuid())
+  organizationId   String
+  customerId       String?
+  reservationId    String?
+  insuranceCompany String
+  policyNumber     String
+  policyHolderName String
+  expirationDate   DateTime?
+  additionalNotes  String?
+  status           InsuranceVerificationStatus @default(PENDING)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([reservationId])
+  @@map("customer_insurance_uploads")
+}
+
+/// A stored document (insurance card front/back, declaration page, receipt).
+model InsuranceDocument {
+  id           String   @id @default(uuid())
+  uploadId     String?  // CustomerInsuranceUpload.id
+  purchaseId   String?  // InsurancePurchase.id (e.g. receipt)
+  kind         InsuranceDocumentKind
+  storagePath  String   // Supabase Storage object path (private bucket)
+  fileName     String?
+  contentType  String?
+  createdAt    DateTime @default(now())
+
+  @@index([uploadId])
+  @@map("insurance_documents")
+}
+
+/// Links a reservation to its insurance choice and tracks coverage status.
+model ReservationInsurance {
+  id             String   @id @default(uuid())
+  organizationId String
+  reservationId  String   @unique
+  customerId     String?
+  selectionType  InsuranceSelectionType
+  status         InsuranceCoverageStatus @default(PENDING_SELECTION)
+  providerKey    String?  // when THIRD_PARTY
+  purchaseId     String?  // InsurancePurchase.id
+  uploadId       String?  // CustomerInsuranceUpload.id
+  coverageCostCents Int   @default(0)
+  depositCents   Int      @default(0) // deposit applied for this selection
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([organizationId, status])
+  @@map("reservation_insurance")
+}
+
+/// Audit trail of verification decisions on uploaded customer insurance.
+model InsuranceVerification {
+  id            String   @id @default(uuid())
+  organizationId String
+  uploadId      String
+  reviewerId    String?  // User.id of the owner/staff who reviewed
+  status        InsuranceVerificationStatus
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([uploadId])
+  @@map("insurance_verifications")
+}
+
+/// Per-organization insurance policy/configuration set by the business owner.
+model InsuranceSetting {
+  id                          String   @id @default(uuid())
+  organizationId              String   @unique
+  requireInsurance            Boolean  @default(false)
+  allowOwnInsurance           Boolean  @default(true)
+  allowDecline                Boolean  @default(true)
+  manualApproval              Boolean  @default(true)
+  enabledProviders            String[] @default(["rentalcover", "allianz", "bonzah"])
+  minLiabilityCents           Int      @default(5000000)
+  requiredCoverageLimitsCents Int      @default(3500000)
+  customTerms                 String?
+  depositThirdPartyCents      Int      @default(20000)
+  depositOwnInsuranceCents    Int      @default(35000)
+  depositDeclinedCents        Int      @default(75000)
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  @@map("insurance_settings")
 }

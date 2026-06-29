@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getPublicTenant, getPublicVehicle, getVehicleAvailability } from "@/lib/data/public-data";
+import { getBookingInsurance } from "@/lib/insurance/data";
 import { BookingForm } from "@/components/public/booking-form";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,8 @@ export default async function BookVehiclePage({ params }: PageProps<"/[org]/book
   if (!vehicle) {
     notFound();
   }
+
+  const bookingInsurance = await getBookingInsurance(org, Math.round(vehicle.dailyRate * 100));
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 md:px-6">
@@ -34,7 +37,10 @@ export default async function BookVehiclePage({ params }: PageProps<"/[org]/book
           vehicle={vehicle}
           brandColor={tenant?.brandColor ?? "#166534"}
           depositFee={tenant?.depositFee ?? 250}
+          taxRatePct={tenant?.taxRatePct ?? 8}
+          platformFeePct={tenant?.platformFeePct ?? 10}
           availabilityBlocks={availabilityBlocks}
+          bookingInsurance={bookingInsurance}
         />
       </div>
     </div>
