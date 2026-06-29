@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Car } from "lucide-react";
-import { oauthSignInAction, signInAction, signUpAction } from "@/app/login/actions";
+import { signInAction, signUpAction } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
@@ -66,22 +66,14 @@ export default async function LoginPage({
             <div className="rounded-2xl border bg-card p-5 shadow-sm">
               <h2 className="text-xl font-semibold">Sign In</h2>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <form action={oauthSignInAction}>
-                  <input type="hidden" name="provider" value="google" />
-                  <input type="hidden" name="next" value={next} />
-                  <Button type="submit" variant="outline" className="w-full">
-                    <span className="flex size-5 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white">G</span>
-                    Continue with Gmail
-                  </Button>
-                </form>
-                <form action={oauthSignInAction}>
-                  <input type="hidden" name="provider" value="yahoo" />
-                  <input type="hidden" name="next" value={next} />
-                  <Button type="submit" variant="outline" className="w-full">
-                    <span className="flex size-5 items-center justify-center rounded-full bg-[#6001d2] text-xs font-black text-white">Y!</span>
-                    Continue with Yahoo
-                  </Button>
-                </form>
+                <a href={`/api/auth/oauth?provider=google&next=${encodeURIComponent(next)}`} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border bg-card text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white">G</span>
+                  Continue with Gmail
+                </a>
+                <a href={`/api/auth/oauth?provider=yahoo&next=${encodeURIComponent(next)}`} className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border bg-card text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-[#6001d2] text-xs font-black text-white">Y!</span>
+                  Continue with Yahoo
+                </a>
               </div>
               <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 <span className="h-px flex-1 bg-border" /> or email <span className="h-px flex-1 bg-border" />
@@ -97,22 +89,14 @@ export default async function LoginPage({
             <div className="rounded-2xl border bg-card p-5 shadow-sm">
               <h2 className="text-xl font-semibold">Create Workspace</h2>
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <form action={oauthSignInAction}>
-                  <input type="hidden" name="provider" value="google" />
-                  <input type="hidden" name="next" value="/onboard" />
-                  <Button type="submit" variant="outline" className="w-full">
-                    <span className="flex size-5 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white">G</span>
-                    Sign up with Gmail
-                  </Button>
-                </form>
-                <form action={oauthSignInAction}>
-                  <input type="hidden" name="provider" value="yahoo" />
-                  <input type="hidden" name="next" value="/onboard" />
-                  <Button type="submit" variant="outline" className="w-full">
-                    <span className="flex size-5 items-center justify-center rounded-full bg-[#6001d2] text-xs font-black text-white">Y!</span>
-                    Sign up with Yahoo
-                  </Button>
-                </form>
+                <a href="/api/auth/oauth?provider=google&next=%2Fonboard" className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border bg-card text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-blue-600 text-xs font-black text-white">G</span>
+                  Sign up with Gmail
+                </a>
+                <a href="/api/auth/oauth?provider=yahoo&next=%2Fonboard" className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border bg-card text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+                  <span className="flex size-5 items-center justify-center rounded-full bg-[#6001d2] text-xs font-black text-white">Y!</span>
+                  Sign up with Yahoo
+                </a>
               </div>
               <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
                 <span className="h-px flex-1 bg-border" /> or email <span className="h-px flex-1 bg-border" />
