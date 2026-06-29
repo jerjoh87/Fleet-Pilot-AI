@@ -16,6 +16,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^6.18.0",
+    "@sentry/nextjs": "^10.62.0",
     "@stripe/stripe-js": "^7.9.0",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.76.1",

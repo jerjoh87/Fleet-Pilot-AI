@@ -180,6 +180,15 @@ function demoTenant(slug: string): PublicTenant {
   };
 }
 
+async function isDemoFallback(slug: string): Promise<boolean> {
+  if (!isDatabaseConfigured()) return true;
+  const org = await prisma.organization.findFirst({
+    where: { OR: [{ slug }, { domain: slug }] },
+    select: { id: true }
+  });
+  return !org && slug === demoOrg.slug;
+}
+
 export async function getPublicTenant(slug: string): Promise<PublicTenant | null> {
   if (!isDatabaseConfigured()) {
     return demoTenant(slug);
@@ -192,7 +201,7 @@ export async function getPublicTenant(slug: string): Promise<PublicTenant | null
   });
 
   if (!org) {
-    return null;
+    return slug === demoOrg.slug ? demoTenant(slug) : null;
   }
 
   return {
@@ -231,7 +240,7 @@ export type FleetFilters = {
 export async function getPublicFleet(slug: string, filters: FleetFilters = {}): Promise<PublicVehicle[]> {
   let fleet: PublicVehicle[];
 
-  if (!isDatabaseConfigured()) {
+  if (!isDatabaseConfigured() || await isDemoFallback(slug)) {
     fleet = demoVehicles.map(toPublicVehicle);
   } else {
     const org = await prisma.organization.findFirst({
@@ -318,7 +327,7 @@ function demoAvailabilityBlocks(vehicleId: string): AvailabilityBlock[] {
 }
 
 export async function getVehicleAvailability(slug: string, vehicleId: string): Promise<AvailabilityBlock[]> {
-  if (!isDatabaseConfigured()) {
+  if (!isDatabaseConfigured() || await isDemoFallback(slug)) {
     return demoAvailabilityBlocks(vehicleId);
   }
 
@@ -413,7 +422,32 @@ export async function getPortalReservations(
     where: { OR: [{ slug }, { domain: slug }] },
     select: { id: true }
   });
-  if (!org) return [];
+  if (!org) {
+    if (await isDemoFallback(slug)) {
+      const fleet = await getPublicFleet(slug);
+      const vehicle = fleet[0];
+      if (!vehicle || (!reservationId && !email)) return [];
+      const start = new Date();
+      start.setDate(start.getDate() + 7);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 3);
+      return [{
+        id: reservationId || "demo-reservation",
+        customerName: email ? "Demo Customer" : "Guest",
+        customerEmail: email || "guest@example.com",
+        vehicleName: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+        vehicleImage: vehicle.image,
+        startsAt: toDateOnly(start),
+        endsAt: toDateOnly(end),
+        status: "Confirmed",
+        totalCents: vehicle.dailyRate * 3 * 100,
+        depositCents: 25000,
+        paymentStatus: "Demo",
+        contractSigned: false
+      }];
+    }
+    return [];
+  }
 
   const reservations = await prisma.reservation.findMany({
     where: {
