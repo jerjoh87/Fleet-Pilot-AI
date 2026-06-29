@@ -43,7 +43,7 @@ export default async function PublicTenantLayout({ children, params }: LayoutPro
 
           <div className="flex items-center gap-2">
             <a
-              href={`/${tenant.slug}`}
+              href="/become-a-host"
               className="hidden rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground sm:inline-block"
             >
               Become a host
