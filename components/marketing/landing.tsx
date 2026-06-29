@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { billingPlans } from "@/lib/billing/plans";
 
+const liveBookingUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/luxedrive`;
+
 const features = [
   { icon: BarChart3, title: "Operations dashboard", text: "Live utilization, revenue, and fleet health in one real-time command center." },
   { icon: CreditCard, title: "Payments & deposits", text: "Stripe-powered checkout, refundable deposit holds, refunds, and automated invoicing." },
@@ -47,7 +49,7 @@ export function MarketingLanding() {
               <a href="#features" className="hover:text-white">Features</a>
               <a href="#how" className="hover:text-white">How it works</a>
               <a href="#pricing" className="hover:text-white">Pricing</a>
-              <a href="/luxedrive" className="hover:text-white">Live demo</a>
+              <a href={liveBookingUrl} className="hover:text-white">Live demo</a>
             </nav>
             <div className="flex items-center gap-2">
               <a href="/login" className="rounded-lg px-4 py-2 text-sm text-slate-300 hover:text-white">Sign in</a>
@@ -76,7 +78,7 @@ export function MarketingLanding() {
                 <a href="/dashboard" className="inline-flex h-12 items-center gap-2 rounded-full bg-blue-500 px-6 font-medium text-white hover:bg-blue-400">
                   Start free trial <ArrowRight className="size-4" />
                 </a>
-                <a href="/luxedrive" className="inline-flex h-12 items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-6 font-medium text-white hover:bg-white/[0.08]">
+                <a href={liveBookingUrl} className="inline-flex h-12 items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-6 font-medium text-white hover:bg-white/[0.08]">
                   See a live booking site
                 </a>
               </div>
