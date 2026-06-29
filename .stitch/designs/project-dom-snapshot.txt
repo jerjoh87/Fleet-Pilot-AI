@@ -1,0 +1,369 @@
+- main:
+  - iframe [active]:
+    - main:
+      - button:
+      - button "FleetPilot AI Rental OS"
+      - button:
+      - button:
+      - button:
+      - button:
+      - button "Account Menu":
+        - img "Profile image for Jay Johnson"
+      - button:
+      - button:
+      - button:
+      - button:
+      - button "Choose File"
+      - button:
+      - button:
+      - button:
+      - button "9%":
+        - generic: 9%
+      - button "Helpful Links":
+      - button "Choose File"
+      - application:
+        - generic: image
+        - generic: FleetPilot AI Logo
+        - iframe
+        - generic: devices
+        - generic: Fleet Management
+        - iframe
+        - generic: devices
+        - generic: Booking Portal
+        - iframe
+        - generic: devices
+        - generic: FleetPilot AI - Landing Page
+        - iframe:
+          - navigation:
+            - img "FleetPilot AI Logo"
+            - generic: FleetPilot AI
+            - link "Features":
+              - /url: "#"
+            - link "Pricing":
+              - /url: "#"
+            - link "Fleet":
+              - /url: "#"
+            - link "Support":
+              - /url: "#"
+            - button "Sign In"
+            - button "Book Now"
+          - main:
+            - heading "The AI-Powered OS for Independent Car Rentals." [level=1]
+            - paragraph: Scale your operations and maximize fleet ROI with the industry's most advanced intelligence layer. Automate bookings, optimize pricing, and track everything in real-time.
+            - button "Start Free Trial"
+            - button "play_circle Watch Demo":
+              - generic: play_circle
+              - text: Watch Demo
+            - generic: fleet_analytics_v4.2
+            - text: Platform Core
+            - heading "Designed for High-Performance Fleet Ops" [level=2]
+            - generic: location_on
+            - heading "Precision Real-Time Tracking" [level=3]
+            - paragraph: Global positioning with sub-meter accuracy and intelligent geofencing alerts for every vehicle in your fleet.
+            - generic: event_available
+            - heading "Automated Bookings" [level=3]
+            - paragraph: Zero-touch reservation management system that works while you sleep.
+            - generic: auto_graph
+            - heading "AI Fleet Optimization" [level=3]
+            - paragraph: Predictive maintenance and dynamic pricing algorithms to maximize your fleet utilization.
+            - heading "Premium Fleet Assets" [level=3]
+            - paragraph: Optimized for high-value vehicle lifecycle management.
+            - heading "Scalable Pricing" [level=2]
+            - paragraph: Choose the plan that fits your current fleet size.
+            - generic: trending_up
+            - heading "Growth" [level=3]
+            - generic: $299
+            - generic: /mo
+            - list:
+              - generic: check_circle
+              - text: Up to 25 Vehicles
+              - generic: check_circle
+              - text: Real-time Tracking
+              - generic: check_circle
+              - text: Automated Bookings
+              - generic: check_circle
+              - text: Basic AI Analytics
+            - button "Get Started"
+            - generic: Recommended
+            - heading "Enterprise" [level=3]
+            - generic: Custom
+            - list:
+              - generic: check_circle
+              - text: Unlimited Vehicles
+              - generic: check_circle
+              - text: Dedicated Account Manager
+              - generic: check_circle
+              - text: Custom AI Model Training
+              - generic: check_circle
+              - text: API & Webhook Access
+            - button "Contact Sales"
+            - heading "Ready to Pilot Your Fleet?" [level=2]
+            - paragraph: Join 500+ independent rental companies using FleetPilot AI to dominate their local markets.
+            - button "Start Your Free Trial"
+            - button "Talk to a specialist"
+          - contentinfo:
+            - img "FleetPilot AI Footer Logo"
+            - generic: FleetPilot AI
+            - link "Privacy Policy":
+              - /url: "#"
+            - link "Terms of Service":
+              - /url: "#"
+            - link "Cookie Policy":
+              - /url: "#"
+            - paragraph: © 2024 FleetPilot AI. All rights reserved.
+        - generic: palette
+        - generic: FleetPilot AI
+        - generic: Primary
+        - generic "Click to copy": "#3B82F6"
+        - 'generic "T0 #000000 — Click to copy"'
+        - 'generic "T10 #001a42 — Click to copy"'
+        - 'generic "T20 #002e6a — Click to copy"'
+        - 'generic "T30 #004395 — Click to copy"'
+        - 'generic "T40 #005ac2 — Click to copy"'
+        - 'generic "T50 #2573e6 — Click to copy"'
+        - 'generic "T60 #4d8eff — Click to copy"'
+        - 'generic "T70 #81aaff — Click to copy"'
+        - 'generic "T80 #adc6ff — Click to copy"'
+        - 'generic "T90 #d8e2ff — Click to copy"'
+        - 'generic "T95 #edf0ff — Click to copy"'
+        - 'generic "T100 #ffffff — Click to copy"'
+        - generic: Secondary
+        - generic "Click to copy": "#10B981"
+        - 'generic "T0 #000000 — Click to copy"'
+        - 'generic "T10 #002113 — Click to copy"'
+        - 'generic "T20 #003824 — Click to copy"'
+        - 'generic "T30 #005236 — Click to copy"'
+        - 'generic "T40 #006c49 — Click to copy"'
+        - 'generic "T50 #00885d — Click to copy"'
+        - 'generic "T60 #00a572 — Click to copy"'
+        - 'generic "T70 #26c289 — Click to copy"'
+        - 'generic "T80 #4edea3 — Click to copy"'
+        - 'generic "T90 #6ffbbe — Click to copy"'
+        - 'generic "T95 #beffdb — Click to copy"'
+        - 'generic "T100 #ffffff — Click to copy"'
+        - generic: Tertiary
+        - generic "Click to copy": "#6366F1"
+        - 'generic "T0 #000000 — Click to copy"'
+        - 'generic "T10 #07006c — Click to copy"'
+        - 'generic "T20 #1000a9 — Click to copy"'
+        - 'generic "T30 #2f2ebe — Click to copy"'
+        - 'generic "T40 #494bd6 — Click to copy"'
+        - 'generic "T50 #6366f1 — Click to copy"'
+        - 'generic "T60 #8083ff — Click to copy"'
+        - 'generic "T70 #a0a3ff — Click to copy"'
+        - 'generic "T80 #c0c1ff — Click to copy"'
+        - 'generic "T90 #e1e0ff — Click to copy"'
+        - 'generic "T95 #f2efff — Click to copy"'
+        - 'generic "T100 #ffffff — Click to copy"'
+        - generic: Neutral
+        - generic "Click to copy": "#0F172A"
+        - 'generic "T0 #000000 — Click to copy"'
+        - 'generic "T10 #131b2e — Click to copy"'
+        - 'generic "T20 #283044 — Click to copy"'
+        - 'generic "T30 #3f465c — Click to copy"'
+        - 'generic "T40 #565e74 — Click to copy"'
+        - 'generic "T50 #6f778e — Click to copy"'
+        - 'generic "T60 #8990a8 — Click to copy"'
+        - 'generic "T70 #a3abc4 — Click to copy"'
+        - 'generic "T80 #bec6e0 — Click to copy"'
+        - 'generic "T90 #dae2fd — Click to copy"'
+        - 'generic "T95 #eef0ff — Click to copy"'
+        - 'generic "T100 #ffffff — Click to copy"'
+        - generic: Headline
+        - generic: Inter
+        - generic: Aa
+        - button "Primary"
+        - button "Secondary"
+        - button "Inverted"
+        - button "Outlined"
+        - generic: search
+        - generic: Search
+        - generic: Body
+        - generic: Inter
+        - generic: Aa
+        - generic: home
+        - generic: search
+        - generic: person
+        - generic: Label
+        - generic: Jetbrains Mono
+        - generic: Aa
+        - generic: edit
+        - generic: edit
+        - text: Label
+        - generic: auto_fix_high
+        - generic: category
+        - generic: sell
+        - generic: delete
+        - generic: devices
+        - generic: Operations Dashboard
+        - iframe:
+          - complementary:
+            - img "FleetPilot AI Logo"
+            - generic: FleetPilot AI
+            - navigation:
+              - link "dashboard Dashboard":
+                - /url: "#"
+                - generic: dashboard
+                - generic: Dashboard
+              - link "directions_car Fleet":
+                - /url: "#"
+                - generic: directions_car
+                - generic: Fleet
+              - link "insert_chart Analytics":
+                - /url: "#"
+                - generic: insert_chart
+                - generic: Analytics
+              - link "build Maintenance":
+                - /url: "#"
+                - generic: build
+                - generic: Maintenance
+              - link "settings Settings":
+                - /url: "#"
+                - generic: settings
+                - generic: Settings
+            - button "add Add Vehicle":
+              - generic: add
+              - text: Add Vehicle
+            - link "help Support":
+              - /url: "#"
+              - generic: help
+              - generic: Support
+            - link "logout Logout":
+              - /url: "#"
+              - generic: logout
+              - generic: Logout
+          - main:
+            - heading "Operational Dashboard" [level=1]
+            - paragraph: Real-time performance monitoring and fleet health.
+            - button "calendar_month Last 24 Hours":
+              - generic: calendar_month
+              - text: Last 24 Hours
+            - button "add_circle New Booking":
+              - generic: add_circle
+              - text: New Booking
+            - generic: Total Fleet
+            - generic: local_shipping
+            - generic: 1,248
+            - generic: trending_up
+            - text: +12% vs last month
+            - generic: Active Rentals
+            - generic: key
+            - generic: "942"
+            - generic: trending_up
+            - text: 86.4% utilization
+            - generic: Maint. Alerts
+            - generic: warning
+            - generic: "14"
+            - generic: priority_high
+            - text: 3 critical actions required
+            - generic: Revenue
+            - generic: payments
+            - generic: $142,500
+            - generic: Daily average $5,937
+            - heading "Fleet Distribution" [level=3]
+            - generic: EVs
+            - generic: Hybrids
+            - generic: ICE
+            - generic: JAN
+            - generic: FEB
+            - generic: MAR
+            - generic: APR
+            - generic: MAY
+            - generic: JUN
+            - generic: JUL
+            - generic: AUG
+            - generic: SEP
+            - generic: OCT
+            - generic: "Live Deployment: Austin, TX"
+            - heading "System Health" [level=4]
+            - generic: AI Optimization
+            - generic: Active
+            - generic: Cloud Gateway
+            - generic: 99.9% Uptime
+            - heading "Recent Activity" [level=3]
+            - button "View all"
+            - generic: car_repair
+            - paragraph: "Vehicle #TX-204 entering maintenance"
+            - paragraph: 2 mins ago • Brake pads replacement
+            - generic: check_circle
+            - paragraph: "New Rental Confirmed #BOK-9421"
+            - paragraph: "15 mins ago • User: David Miller"
+            - generic: report_problem
+            - paragraph: Low Tire Pressure Detected
+            - paragraph: "1 hour ago • Vehicle #CA-883"
+            - generic: speed
+            - paragraph: "Telematics update: Optimized"
+            - paragraph: 2 hours ago • New routes deployed to 24 units
+            - generic: person_add
+            - paragraph: New Fleet Manager Added
+            - paragraph: 5 hours ago • Sarah Jenkins • Admin Level
+            - generic: Current Weather
+            - generic: wb_sunny
+            - text: 72°F
+            - paragraph: Ideal conditions for fleet deployment in operational hubs.
+            - generic: FleetPilot AI
+            - generic: © 2024. All rights reserved.
+            - link "Privacy Policy":
+              - /url: "#"
+            - link "Terms of Service":
+              - /url: "#"
+            - link "Cookie Policy":
+              - /url: "#"
+        - button "Refine the dashboard analytics charts 1":
+          - generic: Refine the dashboard analytics charts
+          - generic: "1"
+        - button "Design a mobile version for drivers 2":
+          - generic: Design a mobile version for drivers
+          - generic: "2"
+        - button "Add a detailed vehicle checkout flow 3":
+          - generic: Add a detailed vehicle checkout flow
+          - generic: "3"
+        - textbox:
+          - paragraph: What would you like to change or create?
+        - button "Choose File"
+        - button:
+        - button:
+        - button:
+        - button:
+        - button "3 Flash":
+          - generic: 3 Flash
+        - button:
+        - button [disabled]:
+        - button [expanded]:
+          - status:
+            - generic: Agent log
+        - menu "Agent log" [active]:
+          - menuitem "Design a premium, modern SaaS. web application cal...":
+            - generic: Design a premium, modern SaaS. web application cal...
+        - button "Collapse panel":
+        - img "Jay Johnson"
+        - paragraph: Design a premium, modern SaaS. web application called FleetPilot AI, an AI-poweredoperating system for independent car rental businesses.
+        - button "Copy prompt":
+        - button "Show more":
+        - paragraph:
+          - text: I've designed the foundational experience for
+          - strong: FleetPilot AI
+          - text: ", a premium, modern SaaS platform for car rental businesses."
+        - heading "Design Overview" [level=3]
+        - list:
+          - strong: Visual Identity
+          - text: ": I established a sophisticated dark-mode aesthetic using a deep navy and slate gray palette, accented by a vibrant electric blue. This choice communicates reliability, high-tech precision, and professional efficiency."
+          - strong: Core Screens
+          - text: ":"
+          - list:
+            - strong: Landing Page
+            - text: ": A high-conversion marketing page highlighting the platform's AI-driven capabilities and scalable pricing."
+            - strong: Operations Dashboard
+            - text: ": A mission-control style overview featuring real-time KPIs, fleet distribution, and critical alerts."
+            - strong: Fleet Management
+            - text: ": A functional, data-rich interface for detailed oversight of vehicle status, maintenance, and logistics."
+            - strong: Booking Portal
+            - text: ": A streamlined, client-facing interface optimized for search, discovery, and reservation."
+          - strong: Consistency
+          - text: ": All screens share a unified design system and a suite of predicted components (Navigation, Footers, etc.) to ensure a seamless transition between the marketing site and the management application."
+        - paragraph:
+          - text: Would you like to refine any of these layouts, or should we dive into more specific features like the
+          - strong: Telematics Detail
+          - text: or
+          - strong: Customer Support
+          - text: interfaces?

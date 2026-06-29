@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FleetPilot AI | Fleet Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#dae2fd",
+                        "secondary-container": "#00a572",
+                        "surface-bright": "#31394d",
+                        "on-tertiary-container": "#0d0096",
+                        "error-container": "#93000a",
+                        "inverse-primary": "#005ac2",
+                        "on-primary": "#002e6a",
+                        "on-primary-fixed-variant": "#004395",
+                        "inverse-on-surface": "#283044",
+                        "secondary-fixed-dim": "#4edea3",
+                        "surface-container-highest": "#2d3449",
+                        "surface-container-lowest": "#060e20",
+                        "surface-container": "#171f33",
+                        "on-tertiary-fixed": "#07006c",
+                        "primary": "#adc6ff",
+                        "primary-fixed-dim": "#adc6ff",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-error": "#690005",
+                        "primary-container": "#4d8eff",
+                        "on-secondary-fixed": "#002113",
+                        "error": "#ffb4ab",
+                        "outline-variant": "#424754",
+                        "background": "#0b1326",
+                        "on-primary-container": "#00285d",
+                        "on-secondary": "#003824",
+                        "outline": "#8c909f",
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-surface-variant": "#c2c6d6",
+                        "primary-fixed": "#d8e2ff",
+                        "surface-dim": "#0b1326",
+                        "on-secondary-container": "#00311f",
+                        "surface": "#0b1326",
+                        "on-background": "#dae2fd",
+                        "secondary": "#4edea3",
+                        "surface-container-high": "#222a3d",
+                        "on-tertiary": "#1000a9",
+                        "tertiary-container": "#8083ff",
+                        "tertiary-fixed": "#e1e0ff",
+                        "surface-variant": "#2d3449",
+                        "surface-tint": "#adc6ff",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#131b2e",
+                        "inverse-surface": "#dae2fd",
+                        "tertiary": "#c0c1ff",
+                        "tertiary-fixed-dim": "#c0c1ff",
+                        "on-tertiary-fixed-variant": "#2f2ebe",
+                        "on-primary-fixed": "#001a42"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "lg": "24px",
+                        "margin-desktop": "32px",
+                        "gutter": "24px",
+                        "md": "16px",
+                        "margin-mobile": "16px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "xl": "40px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-mono": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "label-mono": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid #334155;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b1326;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+<!-- SideNavBar (Predicted from JSON) -->
+<aside class="fixed left-0 top-0 h-full w-[280px] bg-surface-container border-r border-outline-variant flex flex-col py-xl z-40 hidden md:flex">
+<div class="px-lg mb-xl flex items-center gap-sm">
+<img alt="FleetPilot AI Logo" class="w-10 h-10 object-contain" src="data:image/png;base64,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"/>
+<span class="font-headline-md text-headline-md text-primary tracking-tighter">FleetPilot AI</span>
+</div>
+<div class="flex-1 space-y-xs overflow-y-auto">
+<!-- Dashboard -->
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high px-lg py-md transition-colors group" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<!-- Fleet (ACTIVE) -->
+<a class="flex items-center gap-md text-primary font-bold bg-primary-container/10 border-r-4 border-primary px-lg py-md" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">directions_car</span>
+<span class="font-label-sm text-label-sm">Fleet</span>
+</a>
+<!-- Analytics -->
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high px-lg py-md transition-colors" href="#">
+<span class="material-symbols-outlined">insert_chart</span>
+<span class="font-label-sm text-label-sm">Analytics</span>
+</a>
+<!-- Maintenance -->
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high px-lg py-md transition-colors" href="#">
+<span class="material-symbols-outlined">build</span>
+<span class="font-label-sm text-label-sm">Maintenance</span>
+</a>
+<!-- Settings -->
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high px-lg py-md transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</div>
+<div class="mt-auto px-lg mb-lg">
+<button class="w-full bg-primary text-on-primary font-bold py-md rounded-lg flex items-center justify-center gap-sm active:scale-95 transition-transform hover:brightness-110">
+<span class="material-symbols-outlined">add</span>
+<span>Add Vehicle</span>
+</button>
+</div>
+<div class="border-t border-outline-variant pt-lg">
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high px-lg py-md transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-sm text-label-sm">Support</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high px-lg py-md transition-colors" href="#">
+<span class="material-symbols-outlined">logout</span>
+<span class="font-label-sm text-label-sm">Logout</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-[280px] p-margin-mobile md:p-margin-desktop overflow-x-hidden">
+<!-- Header & Stats Overview -->
+<header class="mb-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-lg">
+<div>
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface tracking-tighter">Fleet Management</h1>
+<p class="text-on-surface-variant font-body-md mt-xs">Real-time oversight of your global fleet operations.</p>
+</div>
+<div class="flex items-center gap-md bg-surface-container-high p-xs rounded-xl border border-outline-variant">
+<div class="px-lg py-sm border-r border-outline-variant text-center">
+<div class="text-secondary font-label-mono text-label-mono">142</div>
+<div class="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest">Active</div>
+</div>
+<div class="px-lg py-sm border-r border-outline-variant text-center">
+<div class="text-error font-label-mono text-label-mono">08</div>
+<div class="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest">Repair</div>
+</div>
+<div class="px-lg py-sm text-center">
+<div class="text-primary font-label-mono text-label-mono">94%</div>
+<div class="text-on-surface-variant text-[10px] uppercase font-bold tracking-widest">Util.</div>
+</div>
+</div>
+</header>
+<!-- Dynamic Filters & Search -->
+<section class="glass-panel rounded-xl p-md mb-lg flex flex-wrap gap-md items-center justify-between">
+<div class="flex flex-wrap gap-md items-center flex-1">
+<!-- Search -->
+<div class="relative w-full md:w-80">
+<span class="material-symbols-outlined absolute left-md top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg pl-xl pr-md py-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all" placeholder="Search by vehicle, plate, or driver..." type="text"/>
+</div>
+<!-- Status Filter -->
+<select class="bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-md text-on-surface font-label-sm focus:border-primary outline-none min-w-[140px]">
+<option value="">All Statuses</option>
+<option value="available">Available</option>
+<option value="rented">Rented</option>
+<option value="maintenance">Maintenance</option>
+</select>
+<!-- Vehicle Type Filter -->
+<select class="bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-md text-on-surface font-label-sm focus:border-primary outline-none min-w-[140px]">
+<option value="">All Types</option>
+<option value="sedan">Sedan</option>
+<option value="suv">SUV</option>
+<option value="truck">Electric Truck</option>
+</select>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-md rounded-lg border border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary transition-all">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+<button class="p-md rounded-lg border border-outline-variant text-on-surface-variant hover:text-primary hover:border-primary transition-all">
+<span class="material-symbols-outlined">file_download</span>
+</button>
+</div>
+</section>
+<!-- Fleet Table Card -->
+<section class="glass-panel rounded-xl overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-highest/50 border-b border-outline-variant">
+<th class="px-lg py-lg font-label-sm text-on-surface-variant">Vehicle Details</th>
+<th class="px-lg py-lg font-label-sm text-on-surface-variant">Status</th>
+<th class="px-lg py-lg font-label-sm text-on-surface-variant">License Plate</th>
+<th class="px-lg py-lg font-label-sm text-on-surface-variant">Last Service</th>
+<th class="px-lg py-lg font-label-sm text-on-surface-variant">Odometer</th>
+<th class="px-lg py-lg font-label-sm text-on-surface-variant text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-high transition-colors group">
+<td class="px-lg py-lg">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+<div class="w-full h-full bg-cover bg-center" data-alt="A side-profile studio photograph of a sleek, dark metallic grey Tesla Model S with black rims, professionally lit against a deep charcoal background to emphasize the aerodynamic curves. Modern high-tech automotive aesthetic with subtle blue ambient lighting." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBRL2K2r_zhCcrXXXCK68dO7vU-8aeh8540J8TUbdLo27OFIeXORJNTNqzQwjX2YWToTiNu1wduosXXdF_uQss50SVjHQmFWwANMM-RLoGFWWF459tx2hgOVQdwdEf3s8h75RZi40euniRTZGB8B3myLC0yLR6zsbqfRIWkt3sjywsZXmFkD4lppsJPKnmXEv8-f2RJituEqlMp5dOxEiK2XNrV0USBVMzysAGG_mOennSavvl-16rj96ruPNN0mM50Ny4JGjz9cmSd')"></div>
+</div>
+<div>
+<div class="text-on-surface font-bold font-body-md">Tesla Model S</div>
+<div class="text-on-surface-variant font-label-sm text-[11px]">2024 • Electric</div>
+</div>
+</div>
+</td>
+<td class="px-lg py-lg">
+<span class="bg-secondary/10 text-secondary px-sm py-1 rounded font-label-mono text-[12px] border border-secondary/20">Available</span>
+</td>
+<td class="px-lg py-lg text-on-surface font-label-mono">EV-9928-TX</td>
+<td class="px-lg py-lg text-on-surface-variant font-body-md">Oct 12, 2023</td>
+<td class="px-lg py-lg text-on-surface-variant font-label-mono">12,482 km</td>
+<td class="px-lg py-lg text-right">
+<button class="p-sm rounded-lg hover:bg-surface-container-highest text-outline transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-high transition-colors group">
+<td class="px-lg py-lg">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+<div class="w-full h-full bg-cover bg-center" data-alt="A cinematic front-quarter view of a high-performance electric SUV, possibly an Audi e-tron, in a matte phantom black finish. The scene is set in a modern industrial garage with dramatic top-down lighting and cool blue shadows. Professional automotive photography style." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBodxrNQSt9UQCkzF1K8PTnqcr1xGeXT3e6TkKCPpEbrOeKijQmgHvfRb_j3HP-e9DowjYao7hvK0cUHNwIdjDWUCkJAxmMYZBnsKtVQw0MUnVo4zvkq1RsxfvRweV2KMjP-z4d15WnhYw7yJS47Tlm0FJYqOv-E9GwAoUxW6xVLqPoCSjfuuDM1dxP20hkksEohewtT57iGjFKOTFxGOrmZm7pRlI7ALCaxoWZQpqnLhzgcFGAJGPHNClwl_DLZuCVkXB24PGpYXrE')"></div>
+</div>
+<div>
+<div class="text-on-surface font-bold font-body-md">Audi e-tron GT</div>
+<div class="text-on-surface-variant font-label-sm text-[11px]">2023 • Electric</div>
+</div>
+</div>
+</td>
+<td class="px-lg py-lg">
+<span class="bg-primary/10 text-primary px-sm py-1 rounded font-label-mono text-[12px] border border-primary/20">Rented</span>
+</td>
+<td class="px-lg py-lg text-on-surface font-label-mono">GT-4402-DE</td>
+<td class="px-lg py-lg text-on-surface-variant font-body-md">Nov 01, 2023</td>
+<td class="px-lg py-lg text-on-surface-variant font-label-mono">8,211 km</td>
+<td class="px-lg py-lg text-right">
+<button class="p-sm rounded-lg hover:bg-surface-container-highest text-outline transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-high transition-colors group">
+<td class="px-lg py-lg">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+<div class="w-full h-full bg-cover bg-center" data-alt="Close-up of a white electric Ford F-150 Lightning truck in a bright urban environment. High-contrast lighting with sharp shadows. Modern, powerful utility vehicle design, focused on the front grille and LED headlight signature. High-resolution digital commercial style." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCDBABAO8lxedJ49WAnf_mx5yedgu6X_pToicGkZ7t0NcJoiggv8ZU42PaN-9MY_w7dq6QqeT9DRYP2EcitTwOo1oPWysZ0TRytU8Ga150O8g1m1mD2l0YFEJ8DC5Lwk6HYV10ZS1Q7bB-xTS79gNoe9Ij2e58G04PStWbdx3GFOl0x_50_k7f13LL3XG6AHJAB01TkflBrcW0alyX2a2VIcSq5Ima9F54Nh0Tled-g9JbH6-HPEXr4HYCGALjCCmJISe4e0uqoLgJA')"></div>
+</div>
+<div>
+<div class="text-on-surface font-bold font-body-md">Ford F-150 Lightning</div>
+<div class="text-on-surface-variant font-label-sm text-[11px]">2024 • EV Utility</div>
+</div>
+</div>
+</td>
+<td class="px-lg py-lg">
+<span class="bg-error/10 text-error px-sm py-1 rounded font-label-mono text-[12px] border border-error/20">Maintenance</span>
+</td>
+<td class="px-lg py-lg text-on-surface font-label-mono">LT-7112-FL</td>
+<td class="px-lg py-lg text-on-surface-variant font-body-md">Jan 05, 2024</td>
+<td class="px-lg py-lg text-on-surface-variant font-label-mono">22,104 km</td>
+<td class="px-lg py-lg text-right">
+<button class="p-sm rounded-lg hover:bg-surface-container-highest text-outline transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-high transition-colors group">
+<td class="px-lg py-lg">
+<div class="flex items-center gap-md">
+<div class="w-12 h-12 rounded-lg overflow-hidden bg-surface-container-lowest flex items-center justify-center">
+<div class="w-full h-full bg-cover bg-center" data-alt="A silver Polestar 2 electric sedan parked on a clean concrete surface under an overpass. Minimalist architecture with harsh, direct sunlight creating strong geometric shadows. Deep blue sky and high-tech automotive design cues. Professional luxury car photography." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA8udzZZZOsWZeKwxLq85jo0qCHTLzin8jLVx4Gq7xNoK72GPkeTfpTB8sSaARMAJEB4LC9geCl4T2RFcsJnYHGl0A8Z9VzCxavwjKNxJzoC9Q2ZlTveMmCy7J3q0aCvpEttATDJhs4RwqPTu2qeTSrVpbbCMFN3cnfhxBbbKLZooDmBgTmYjKkwxhr9Pczeuq8vXFJ4xg7RClgFBCtDN2MJF0w337Tei0G1mCAvzIVp5M5J3lbZ7hV9mt8FztFDyiRNCtCgL8dvAr7')"></div>
+</div>
+<div>
+<div class="text-on-surface font-bold font-body-md">Polestar 2</div>
+<div class="text-on-surface-variant font-label-sm text-[11px]">2023 • Electric</div>
+</div>
+</div>
+</td>
+<td class="px-lg py-lg">
+<span class="bg-secondary/10 text-secondary px-sm py-1 rounded font-label-mono text-[12px] border border-secondary/20">Available</span>
+</td>
+<td class="px-lg py-lg text-on-surface font-label-mono">PS-2200-NW</td>
+<td class="px-lg py-lg text-on-surface-variant font-body-md">Dec 15, 2023</td>
+<td class="px-lg py-lg text-on-surface-variant font-label-mono">5,630 km</td>
+<td class="px-lg py-lg text-right">
+<button class="p-sm rounded-lg hover:bg-surface-container-highest text-outline transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="px-lg py-md bg-surface-container-highest/20 border-t border-outline-variant flex justify-between items-center">
+<div class="text-on-surface-variant font-label-sm">Showing 1-10 of 150 vehicles</div>
+<div class="flex items-center gap-xs">
+<button class="p-sm rounded border border-outline-variant text-on-surface-variant hover:text-primary disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded bg-primary text-on-primary font-bold font-label-sm">1</button>
+<button class="w-8 h-8 rounded border border-outline-variant text-on-surface-variant hover:border-primary transition-colors font-label-sm">2</button>
+<button class="w-8 h-8 rounded border border-outline-variant text-on-surface-variant hover:border-primary transition-colors font-label-sm">3</button>
+<button class="p-sm rounded border border-outline-variant text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Insights Bento Section -->
+<section class="mt-xl grid grid-cols-1 md:grid-cols-3 gap-lg">
+<div class="glass-panel p-lg rounded-xl flex flex-col justify-between">
+<div>
+<h3 class="text-on-surface font-headline-md mb-xs">Fleet Health</h3>
+<p class="text-on-surface-variant font-body-md text-sm">System diagnostic overview</p>
+</div>
+<div class="mt-lg">
+<div class="flex justify-between mb-sm">
+<span class="text-on-surface-variant text-xs">Overall Score</span>
+<span class="text-secondary font-bold text-xs">98/100</span>
+</div>
+<div class="h-2 w-full bg-surface-container-lowest rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-[98%] shadow-[0_0_8px_rgba(78,222,163,0.5)]"></div>
+</div>
+</div>
+</div>
+<div class="glass-panel p-lg rounded-xl col-span-1 md:col-span-2 relative overflow-hidden group">
+
+<div class="relative z-10 flex flex-col md:flex-row items-center gap-lg">
+<div class="flex-1">
+<h3 class="text-on-surface font-headline-md mb-sm">Predictive Maintenance</h3>
+<p class="text-on-surface-variant font-body-md text-sm mb-md leading-relaxed">AI analysis suggests 3 vehicles require preemptive tire rotation within the next 48 hours to avoid operational downtime.</p>
+<button class="px-lg py-md border border-primary text-primary font-label-sm rounded-lg hover:bg-primary/10 transition-all flex items-center gap-sm">
+                            View Alerts <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<div class="w-full md:w-48 aspect-video bg-surface-container-lowest/50 rounded-lg border border-outline-variant flex items-center justify-center">
+<span class="material-symbols-outlined text-display-lg text-primary/40">query_stats</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Footer (Predicted from JSON) -->
+<footer class="mt-xl border-t border-outline-variant py-lg flex flex-col md:flex-row justify-between items-center gap-md">
+<div class="text-on-surface-variant font-label-sm">© 2024 FleetPilot AI. All rights reserved.</div>
+<div class="flex gap-lg">
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-sm" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-sm" href="#">Terms of Service</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors font-label-sm" href="#">Cookie Policy</a>
+</div>
+</footer>
+</main>
+<!-- Mobile Nav Bar (Predicted for md:hidden) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full bg-surface-container border-t border-outline-variant flex justify-around items-center py-md z-50">
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-bold">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">directions_car</span>
+<span class="text-[10px] font-bold">Fleet</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="text-[10px] font-bold">Add</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">build</span>
+<span class="text-[10px] font-bold">Service</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-bold">Profile</span>
+</button>
+</nav>
+<script>
+        // Micro-interactions
+        document.querySelectorAll('tr').forEach(row => {
+            row.addEventListener('click', () => {
+                // Mock selection or expansion
+                console.log('Vehicle selected');
+            });
+        });
+
+        // Search highlight
+        const searchInput = document.querySelector('input[type="text"]');
+        searchInput.addEventListener('focus', () => {
+            searchInput.parentElement.classList.add('scale-[1.02]');
+            searchInput.parentElement.classList.add('transition-transform');
+        });
+        searchInput.addEventListener('blur', () => {
+            searchInput.parentElement.classList.remove('scale-[1.02]');
+        });
+    </script>
+</body></html>

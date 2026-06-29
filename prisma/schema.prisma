@@ -1,0 +1,573 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  OWNER
+  MANAGER
+  EMPLOYEE
+  CUSTOMER
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  RESERVED
+  RENTED
+  CLEANING
+  MAINTENANCE
+  OUT_OF_SERVICE
+  RETIRED
+}
+
+enum ReservationStatus {
+  QUOTE
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  LATE
+  CANCELLED
+}
+
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  domain      String?  @unique
+  stripeCustomerId String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     Membership[]
+  vehicles    Vehicle[]
+  customers   Customer[]
+  reservations Reservation[]
+  websiteSettings WebsiteSetting?
+  subscription Subscription?
+  bankAccounts BankAccount[]
+  payouts     Payout[]
+  transactions Transaction[]
+  rentalAgreements RentalAgreement[]
+  agreementTemplates AgreementTemplate[]
+  agreementVersions AgreementVersion[]
+  signatureLogs SignatureLog[]
+  activityLogs ActivityLog[]
+  auditLogs    AuditLog[]
+}
+
+model User {
+  id        String   @id
+  email     String   @unique
+  fullName  String?
+  createdAt DateTime @default(now())
+
+  memberships Membership[]
+}
+
+model Membership {
+  id             String       @id @default(uuid())
+  organizationId String
+  userId         String
+  role           Role
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId, role])
+}
+
+model Vehicle {
+  id             String        @id @default(uuid())
+  organizationId String
+  make           String
+  model          String
+  year           Int
+  vin            String
+  licensePlate   String
+  mileage        Int
+  fuelLevel      Decimal       @db.Decimal(5, 2)
+  dailyRate      Decimal       @db.Decimal(10, 2)
+  publicDescription String?
+  features       String[]
+  rules          String[]
+  status         VehicleStatus @default(AVAILABLE)
+  location       String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  images         VehicleImage[]
+  documents      VehicleDocument[]
+  reservations   Reservation[]
+  maintenance    Maintenance[]
+  damageReports  DamageReport[]
+  gpsDevice      GpsDevice?
+  locations      VehicleLocation[]
+  availabilityBlocks VehicleAvailabilityBlock[]
+
+  @@unique([organizationId, vin])
+  @@unique([organizationId, licensePlate])
+  @@index([organizationId, status])
+}
+
+model VehicleImage {
+  id        String  @id @default(uuid())
+  vehicleId String
+  url       String
+  alt       String?
+  sortOrder Int     @default(0)
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+model VehicleAvailabilityBlock {
+  id             String   @id @default(uuid())
+  organizationId String
+  vehicleId      String
+  startsAt       DateTime
+  endsAt         DateTime
+  reason         String
+  createdAt      DateTime @default(now())
+  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, vehicleId, startsAt, endsAt])
+}
+
+model VehicleDocument {
+  id        String   @id @default(uuid())
+  vehicleId String
+  kind      String
+  url       String
+  expiresAt DateTime?
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+model Customer {
+  id             String   @id @default(uuid())
+  organizationId String
+  name           String
+  email          String
+  phone          String?
+  licenseStatus  String   @default("Pending")
+  customerType   String   @default("Retail")
+  blacklisted    Boolean  @default(false)
+  notes          String?
+  createdAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reservations   Reservation[]
+  reviews        Review[]
+  rentalAgreements RentalAgreement[]
+
+  @@unique([organizationId, email])
+  @@index([organizationId, customerType])
+}
+
+model Driver {
+  id             String @id @default(uuid())
+  organizationId String
+  customerId     String?
+  fullName       String
+  licenseNumber  String
+  licenseState   String
+  verified       Boolean @default(false)
+}
+
+model Reservation {
+  id             String            @id @default(uuid())
+  organizationId String
+  customerId     String
+  vehicleId      String
+  startsAt       DateTime
+  endsAt         DateTime
+  status         ReservationStatus @default(QUOTE)
+  totalCents     Int
+  depositCents   Int
+  signedAt       DateTime?
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer       Customer          @relation(fields: [customerId], references: [id])
+  vehicle        Vehicle           @relation(fields: [vehicleId], references: [id])
+  payments       ReservationPayment[]
+  contract       Contract?
+  rentalAgreement RentalAgreement?
+  damageReports  DamageReport[]
+
+  @@index([organizationId, startsAt, endsAt])
+  @@index([organizationId, status])
+}
+
+model BankAccount {
+  id                      String   @id @default(uuid())
+  organizationId          String
+  stripeConnectAccountId  String?
+  stripeExternalAccountId String?
+  accountHolderName       String
+  businessName            String
+  accountType             String
+  taxStatus               String   @default("pending")
+  bankName                String?
+  last4                   String?
+  routingLast4            String?
+  verificationStatus      String   @default("not_started")
+  payoutSchedule          String   @default("automatic_daily")
+  nextPayoutAt            DateTime?
+  estimatedPayoutCents    Int      @default(0)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  organization            Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, verificationStatus])
+  @@map("bank_accounts")
+}
+
+model Payout {
+  id             String   @id @default(uuid())
+  organizationId String
+  stripePayoutId String?
+  amountCents    Int
+  currency       String   @default("usd")
+  status         String
+  arrivalDate    DateTime?
+  failureCode    String?
+  failureMessage String?
+  createdAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status, createdAt])
+  @@map("payouts")
+}
+
+model Transaction {
+  id                String   @id @default(uuid())
+  organizationId    String
+  reservationId     String?
+  customerName      String
+  vehicleLabel      String
+  grossAmountCents  Int
+  platformFeeCents  Int
+  processingFeeCents Int
+  insuranceRevenueCents Int @default(0)
+  taxesCents        Int
+  netPayoutCents    Int
+  status            String
+  stripePaymentIntentId String?
+  createdAt         DateTime @default(now())
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, status, createdAt])
+  @@map("transactions")
+}
+
+model AgreementTemplate {
+  id                    String   @id @default(uuid())
+  organizationId        String
+  businessName          String
+  businessAddress       String?
+  phone                 String?
+  email                 String?
+  terms                 String
+  mileagePolicy         String
+  fuelPolicy            String
+  smokingPolicy         String
+  petPolicy             String
+  lateReturnPolicy      String
+  cleaningFee           String
+  damagePolicy          String
+  insuranceTerms        String
+  roadsideAssistance    String
+  securityDeposit       String
+  cancellationPolicy    String
+  prohibitedUses        String
+  stateClauses          String
+  signatureDisclosure   String
+  activeVersion         Int      @default(1)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  organization          Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  versions              AgreementVersion[]
+  agreements            RentalAgreement[]
+
+  @@index([organizationId, activeVersion])
+  @@map("agreement_templates")
+}
+
+model AgreementVersion {
+  id             String   @id @default(uuid())
+  organizationId String
+  templateId     String
+  version        Int
+  content        Json
+  createdAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template       AgreementTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, version])
+  @@map("agreement_versions")
+}
+
+model RentalAgreement {
+  id             String   @id @default(uuid())
+  organizationId String
+  reservationId  String   @unique
+  customerId     String
+  templateId     String?
+  version        Int
+  status         String   @default("signed")
+  legalName      String
+  signatureMethod String
+  signatureData  String
+  initialsData   String?
+  agreedAt       DateTime
+  ipAddress      String?
+  userAgent      String?
+  device         String?
+  location       String?
+  pdfUrl         String?
+  createdAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  reservation    Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  customer       Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  template       AgreementTemplate? @relation(fields: [templateId], references: [id])
+  signatureLogs  SignatureLog[]
+  certificate    SignatureCertificate?
+
+  @@index([organizationId, status, createdAt])
+  @@map("rental_agreements")
+}
+
+model SignatureLog {
+  id             String   @id @default(uuid())
+  organizationId String
+  agreementId    String
+  event          String
+  ipAddress      String?
+  userAgent      String?
+  browser        String?
+  device         String?
+  location       String?
+  agreementVersion Int
+  signatureMethod String
+  createdAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  agreement      RentalAgreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, agreementId, createdAt])
+  @@map("signature_logs")
+}
+
+model SignatureCertificate {
+  id             String   @id @default(uuid())
+  agreementId    String   @unique
+  certificateNumber String @unique
+  signerName     String
+  signedAt       DateTime
+  ipAddress      String?
+  userAgent      String?
+  browser        String?
+  device         String?
+  signatureHash  String
+  createdAt      DateTime @default(now())
+  agreement      RentalAgreement @relation(fields: [agreementId], references: [id], onDelete: Cascade)
+
+  @@map("signature_certificates")
+}
+
+model ReservationPayment {
+  id            String @id @default(uuid())
+  reservationId String
+  stripePaymentIntentId String?
+  amountCents   Int
+  kind          String
+  status        String
+  createdAt     DateTime @default(now())
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
+
+model Maintenance {
+  id             String @id @default(uuid())
+  organizationId String
+  vehicleId      String
+  kind           String
+  status         String
+  dueAtMileage   Int?
+  dueDate        DateTime?
+  costCents      Int?
+  notes          String?
+  vehicle        Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+model DamageReport {
+  id             String @id @default(uuid())
+  organizationId String
+  reservationId  String?
+  vehicleId      String
+  phase          String
+  mileage        Int
+  fuelLevel      Decimal @db.Decimal(5, 2)
+  notes          String?
+  mediaUrls      String[]
+  estimateCents  Int?
+  createdAt      DateTime @default(now())
+  vehicle        Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  reservation    Reservation? @relation(fields: [reservationId], references: [id])
+}
+
+model GpsDevice {
+  id             String @id @default(uuid())
+  organizationId String
+  vehicleId      String @unique
+  provider       String
+  externalId     String
+  status         String
+  vehicle        Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+model VehicleLocation {
+  id        String @id @default(uuid())
+  vehicleId String
+  lat       Decimal @db.Decimal(10, 7)
+  lng       Decimal @db.Decimal(10, 7)
+  speedMph  Decimal? @db.Decimal(8, 2)
+  fuelLevel Decimal? @db.Decimal(5, 2)
+  batteryLevel Decimal? @db.Decimal(5, 2)
+  recordedAt DateTime @default(now())
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+}
+
+model InsurancePolicy {
+  id             String @id @default(uuid())
+  organizationId String
+  provider       String
+  policyNumber   String
+  startsAt       DateTime
+  endsAt         DateTime
+  documentUrl    String?
+}
+
+model Contract {
+  id            String @id @default(uuid())
+  reservationId String @unique
+  pdfUrl        String?
+  signatureUrl  String?
+  signedAt      DateTime?
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id             String @id @default(uuid())
+  organizationId String
+  customerId     String?
+  channel        String
+  body           String
+  createdAt      DateTime @default(now())
+}
+
+model Notification {
+  id             String @id @default(uuid())
+  organizationId String
+  userId         String?
+  title          String
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime @default(now())
+}
+
+model Review {
+  id         String @id @default(uuid())
+  customerId String
+  rating     Int
+  body       String?
+  createdAt  DateTime @default(now())
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+model MarketingCampaign {
+  id             String @id @default(uuid())
+  organizationId String
+  channel        String
+  name           String
+  status         String
+  budgetCents    Int?
+  content        Json
+  createdAt      DateTime @default(now())
+}
+
+model CrmContact {
+  id             String @id @default(uuid())
+  organizationId String
+  name           String
+  email          String?
+  phone          String?
+  stage          String
+  notes          String?
+  createdAt      DateTime @default(now())
+}
+
+model WebsiteSetting {
+  id             String @id @default(uuid())
+  organizationId String @unique
+  logoUrl        String?
+  coverImageUrl  String?
+  backgroundStyle String @default("soft")
+  brandColor     String @default("#166534")
+  heroTitle      String
+  about          String?
+  serviceArea    String?
+  contactEmail   String?
+  contactPhone   String?
+  instagramUrl   String?
+  facebookUrl    String?
+  pickupInstructions String?
+  cancellationPolicy String?
+  depositPolicy  String?
+  businessHours  String?
+  trustBadges    String[]
+  seoTitle       String?
+  customDomain   String?
+  depositFeeCents Int @default(25000)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model SubscriptionPlan {
+  id             String @id @default(uuid())
+  name           String
+  stripePriceId  String
+  monthlyCents   Int
+  featureLimits  Json
+}
+
+model Subscription {
+  id             String @id @default(uuid())
+  organizationId String @unique
+  stripeSubscriptionId String
+  status         String
+  currentPeriodEnd DateTime
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id             String @id @default(uuid())
+  organizationId String
+  actorUserId    String?
+  action         String
+  target         String
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id             String @id @default(uuid())
+  organizationId String
+  actorUserId    String?
+  event          String
+  ipAddress      String?
+  userAgent      String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}

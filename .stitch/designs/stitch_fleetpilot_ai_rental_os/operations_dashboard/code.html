@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>FleetPilot AI | Operational Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-surface": "#dae2fd",
+                        "secondary-container": "#00a572",
+                        "surface-bright": "#31394d",
+                        "on-tertiary-container": "#0d0096",
+                        "error-container": "#93000a",
+                        "inverse-primary": "#005ac2",
+                        "on-primary": "#002e6a",
+                        "on-primary-fixed-variant": "#004395",
+                        "inverse-on-surface": "#283044",
+                        "secondary-fixed-dim": "#4edea3",
+                        "surface-container-highest": "#2d3449",
+                        "surface-container-lowest": "#060e20",
+                        "surface-container": "#171f33",
+                        "on-tertiary-fixed": "#07006c",
+                        "primary": "#adc6ff",
+                        "primary-fixed-dim": "#adc6ff",
+                        "secondary-fixed": "#6ffbbe",
+                        "on-error": "#690005",
+                        "primary-container": "#4d8eff",
+                        "on-secondary-fixed": "#002113",
+                        "error": "#ffb4ab",
+                        "outline-variant": "#424754",
+                        "background": "#0b1326",
+                        "on-primary-container": "#00285d",
+                        "on-secondary": "#003824",
+                        "outline": "#8c909f",
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-surface-variant": "#c2c6d6",
+                        "primary-fixed": "#d8e2ff",
+                        "surface-dim": "#0b1326",
+                        "on-secondary-container": "#00311f",
+                        "surface": "#0b1326",
+                        "on-background": "#dae2fd",
+                        "secondary": "#4edea3",
+                        "surface-container-high": "#222a3d",
+                        "on-tertiary": "#1000a9",
+                        "tertiary-container": "#8083ff",
+                        "tertiary-fixed": "#e1e0ff",
+                        "surface-variant": "#2d3449",
+                        "surface-tint": "#adc6ff",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#131b2e",
+                        "inverse-surface": "#dae2fd",
+                        "tertiary": "#c0c1ff",
+                        "tertiary-fixed-dim": "#c0c1ff",
+                        "on-tertiary-fixed-variant": "#2f2ebe",
+                        "on-primary-fixed": "#001a42"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "lg": "24px",
+                        "margin-desktop": "32px",
+                        "gutter": "24px",
+                        "md": "16px",
+                        "margin-mobile": "16px",
+                        "sm": "8px",
+                        "xs": "4px",
+                        "xl": "40px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "label-mono": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "display-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "label-mono": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "display-lg-mobile": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "display-lg": ["48px", {"lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            background-color: #0b1326;
+            color: #dae2fd;
+            font-family: 'Inter', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid #334155;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .status-chip-active { background: rgba(78, 222, 163, 0.1); color: #4edea3; }
+        .status-chip-alert { background: rgba(255, 180, 171, 0.1); color: #ffb4ab; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0b1326; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body class="flex min-h-screen overflow-hidden">
+<!-- SideNavBar (Shared Component) -->
+<aside class="fixed left-0 top-0 h-full w-[280px] bg-surface-container flex flex-col py-xl border-r border-outline-variant z-50">
+<div class="px-lg mb-xl flex items-center gap-md">
+<img alt="FleetPilot AI Logo" class="w-10 h-10 object-contain" src="data:image/png;base64,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"/>
+<span class="font-headline-md text-headline-md text-primary tracking-tighter">FleetPilot AI</span>
+</div>
+<nav class="flex-1 space-y-xs overflow-y-auto">
+<!-- Active: Dashboard -->
+<a class="flex items-center gap-md text-primary font-bold bg-primary-container/10 border-r-4 border-primary px-lg py-md transition-transform active:translate-x-1" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-sm text-label-sm">Dashboard</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high px-lg py-md transition-colors active:translate-x-1 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="directions_car">directions_car</span>
+<span class="font-label-sm text-label-sm">Fleet</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high px-lg py-md transition-colors active:translate-x-1 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="insert_chart">insert_chart</span>
+<span class="font-label-sm text-label-sm">Analytics</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high px-lg py-md transition-colors active:translate-x-1 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="build">build</span>
+<span class="font-label-sm text-label-sm">Maintenance</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high px-lg py-md transition-colors active:translate-x-1 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="settings">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</nav>
+<div class="px-lg mt-auto pt-lg border-t border-outline-variant space-y-sm">
+<button class="w-full bg-primary text-on-primary py-md rounded-lg font-label-sm text-label-sm hover:brightness-110 transition-all flex items-center justify-center gap-sm shadow-lg shadow-primary/10">
+<span class="material-symbols-outlined text-[20px]" data-icon="add">add</span>
+                Add Vehicle
+            </button>
+<div class="flex flex-col">
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high px-md py-sm rounded transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary" data-icon="help">help</span>
+<span class="font-label-sm text-label-sm">Support</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant hover:bg-surface-container-high px-md py-sm rounded transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-error" data-icon="logout">logout</span>
+<span class="font-label-sm text-label-sm">Logout</span>
+</a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="ml-[280px] flex-1 min-h-screen overflow-y-auto px-margin-desktop py-xl">
+<!-- Header -->
+<header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-lg mb-xl">
+<div>
+<h1 class="font-display-lg text-display-lg text-on-surface">Operational Dashboard</h1>
+<p class="font-body-md text-on-surface-variant mt-xs">Real-time performance monitoring and fleet health.</p>
+</div>
+<div class="flex items-center gap-md">
+<button class="bg-surface-container-high border border-outline-variant text-on-surface px-lg py-md rounded-lg font-label-sm text-label-sm hover:bg-surface-container-highest transition-colors flex items-center gap-sm active:scale-95">
+<span class="material-symbols-outlined" data-icon="calendar_month">calendar_month</span>
+                    Last 24 Hours
+                </button>
+<button class="bg-primary text-on-primary px-lg py-md rounded-lg font-label-sm text-label-sm hover:brightness-110 transition-all flex items-center gap-sm active:scale-95">
+<span class="material-symbols-outlined" data-icon="add_circle">add_circle</span>
+                    New Booking
+                </button>
+</div>
+</header>
+<!-- Metrics Grid (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-gutter mb-xl">
+<!-- Total Fleet -->
+<div class="glass-panel p-lg rounded-xl flex flex-col justify-between h-32 hover:border-primary/50 transition-all cursor-default">
+<div class="flex justify-between items-start">
+<span class="text-on-surface-variant font-label-sm uppercase tracking-wider">Total Fleet</span>
+<span class="material-symbols-outlined text-primary" data-icon="local_shipping">local_shipping</span>
+</div>
+<div>
+<div class="text-headline-md font-bold text-on-surface">1,248</div>
+<div class="font-label-sm text-secondary flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="trending_up">trending_up</span>
+                        +12% vs last month
+                    </div>
+</div>
+</div>
+<!-- Active Rentals -->
+<div class="glass-panel p-lg rounded-xl flex flex-col justify-between h-32 hover:border-primary/50 transition-all cursor-default">
+<div class="flex justify-between items-start">
+<span class="text-on-surface-variant font-label-sm uppercase tracking-wider">Active Rentals</span>
+<span class="material-symbols-outlined text-primary" data-icon="key">key</span>
+</div>
+<div>
+<div class="text-headline-md font-bold text-on-surface">942</div>
+<div class="font-label-sm text-secondary flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="trending_up">trending_up</span>
+                        86.4% utilization
+                    </div>
+</div>
+</div>
+<!-- Maintenance Alerts -->
+<div class="glass-panel p-lg rounded-xl flex flex-col justify-between h-32 border-error/20 hover:border-error/50 transition-all cursor-default">
+<div class="flex justify-between items-start">
+<span class="text-on-surface-variant font-label-sm uppercase tracking-wider">Maint. Alerts</span>
+<span class="material-symbols-outlined text-error" data-icon="warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div>
+<div class="text-headline-md font-bold text-on-surface">14</div>
+<div class="font-label-sm text-error flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" data-icon="priority_high">priority_high</span>
+                        3 critical actions required
+                    </div>
+</div>
+</div>
+<!-- Revenue -->
+<div class="glass-panel p-lg rounded-xl flex flex-col justify-between h-32 hover:border-secondary/50 transition-all cursor-default">
+<div class="flex justify-between items-start">
+<span class="text-on-surface-variant font-label-sm uppercase tracking-wider">Revenue</span>
+<span class="material-symbols-outlined text-secondary" data-icon="payments">payments</span>
+</div>
+<div>
+<div class="text-headline-md font-bold text-on-surface">$142,500</div>
+<div class="font-label-sm text-on-surface-variant flex items-center gap-xs">
+                        Daily average $5,937
+                    </div>
+</div>
+</div>
+</div>
+<!-- Main Dashboard Body -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Fleet Status Chart & Details -->
+<div class="lg:col-span-8 flex flex-col gap-gutter">
+<!-- Fleet Distribution Chart Container -->
+<div class="glass-panel rounded-xl p-lg flex-1">
+<div class="flex justify-between items-center mb-lg">
+<h3 class="font-headline-md text-on-surface">Fleet Distribution</h3>
+<div class="flex gap-md">
+<span class="flex items-center gap-sm text-label-sm text-on-surface-variant">
+<span class="w-3 h-3 rounded-full bg-primary"></span> EVs
+                            </span>
+<span class="flex items-center gap-sm text-label-sm text-on-surface-variant">
+<span class="w-3 h-3 rounded-full bg-secondary"></span> Hybrids
+                            </span>
+<span class="flex items-center gap-sm text-label-sm text-on-surface-variant">
+<span class="w-3 h-3 rounded-full bg-surface-container-highest"></span> ICE
+                            </span>
+</div>
+</div>
+<!-- Placeholder for Chart -->
+<div class="h-64 w-full flex items-end justify-between gap-sm px-md pb-xs border-b border-outline-variant relative">
+<div class="w-12 bg-primary rounded-t-lg transition-all hover:brightness-125" style="height: 80%;"></div>
+<div class="w-12 bg-primary rounded-t-lg opacity-80" style="height: 65%;"></div>
+<div class="w-12 bg-primary rounded-t-lg opacity-90" style="height: 85%;"></div>
+<div class="w-12 bg-secondary rounded-t-lg" style="height: 45%;"></div>
+<div class="w-12 bg-secondary rounded-t-lg opacity-80" style="height: 55%;"></div>
+<div class="w-12 bg-surface-container-highest rounded-t-lg" style="height: 30%;"></div>
+<div class="w-12 bg-primary rounded-t-lg" style="height: 90%;"></div>
+<div class="w-12 bg-primary rounded-t-lg opacity-70" style="height: 75%;"></div>
+<div class="w-12 bg-secondary rounded-t-lg" style="height: 40%;"></div>
+<div class="w-12 bg-primary rounded-t-lg" style="height: 95%;"></div>
+<!-- Decorative grid lines -->
+<div class="absolute top-0 left-0 w-full h-[1px] bg-outline-variant opacity-20" style="top: 25%"></div>
+<div class="absolute top-0 left-0 w-full h-[1px] bg-outline-variant opacity-20" style="top: 50%"></div>
+<div class="absolute top-0 left-0 w-full h-[1px] bg-outline-variant opacity-20" style="top: 75%"></div>
+</div>
+<div class="flex justify-between mt-md px-md">
+<span class="font-label-mono text-label-sm text-on-surface-variant">JAN</span>
+<span class="font-label-mono text-label-sm text-on-surface-variant">FEB</span>
+<span class="font-label-mono text-label-sm text-on-surface-variant">MAR</span>
+<span class="font-label-mono text-label-sm text-on-surface-variant">APR</span>
+<span class="font-label-mono text-label-sm text-on-surface-variant">MAY</span>
+<span class="font-label-mono text-label-sm text-on-surface-variant">JUN</span>
+<span class="font-label-mono text-label-sm text-on-surface-variant">JUL</span>
+<span class="font-label-mono text-label-sm text-on-surface-variant">AUG</span>
+<span class="font-label-mono text-label-sm text-on-surface-variant">SEP</span>
+<span class="font-label-mono text-label-sm text-on-surface-variant">OCT</span>
+</div>
+</div>
+<!-- Live Map / Quick Stats -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<div class="glass-panel rounded-xl overflow-hidden relative group min-h-[200px]">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A high-tech digital map of a metropolitan city at night, with glowing blue and green light trails representing active fleet vehicle movement. Minimalist UI elements like data pins and transparent overlays highlight vehicle density. The scene is cinematic and sophisticated." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBsAGavvxNg6bDgz_qHYuuh96wMTqmEI2FwB2GFsq7Zw6s8NFWY5MFY18EfORd958X2fNq4gwJCF6cKdMnUeJG3Mr8YrCsOObtzEWtq515U4f08baP9rCJUmFBgNsfbbAiUq0gWCcwUULh0t9B2eEdQj7MIW9Do7ybCaKEjUPy59p5imsL46hNw-QLAEsIy90BAMj0z8fedaCX6VbbqmgWuZlD7lrtwjCQzfQ6Cu-UINaCRAUBcwAiAm452Jq0_b0b5szg1hxxsFnJs')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-background to-transparent opacity-60"></div>
+<div class="absolute bottom-md left-md">
+<span class="bg-surface-container/80 backdrop-blur px-md py-sm rounded-lg border border-outline-variant flex items-center gap-sm">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+<span class="font-label-sm text-label-sm">Live Deployment: Austin, TX</span>
+</span>
+</div>
+</div>
+<div class="glass-panel rounded-xl p-lg flex flex-col justify-center">
+<h4 class="font-label-sm text-on-surface-variant uppercase mb-md">System Health</h4>
+<div class="space-y-md">
+<div class="flex justify-between items-center">
+<span class="text-on-surface font-body-md">AI Optimization</span>
+<span class="font-label-mono text-secondary">Active</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full" style="width: 94%;"></div>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-on-surface font-body-md">Cloud Gateway</span>
+<span class="font-label-mono text-secondary">99.9% Uptime</span>
+</div>
+<div class="w-full bg-surface-container-high h-2 rounded-full overflow-hidden">
+<div class="bg-secondary h-full" style="width: 100%;"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Activity Sidebar -->
+<div class="lg:col-span-4 glass-panel rounded-xl flex flex-col">
+<div class="p-lg border-b border-outline-variant flex justify-between items-center">
+<h3 class="font-headline-md text-on-surface">Recent Activity</h3>
+<button class="text-primary font-label-sm hover:underline">View all</button>
+</div>
+<div class="flex-1 overflow-y-auto max-h-[600px] p-lg space-y-lg">
+<!-- Activity Item 1 -->
+<div class="flex gap-md group">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="car_repair">car_repair</span>
+</div>
+<div>
+<p class="font-body-md text-on-surface">Vehicle <span class="font-label-mono text-primary">#TX-204</span> entering maintenance</p>
+<p class="text-label-sm text-on-surface-variant mt-1">2 mins ago • Brake pads replacement</p>
+</div>
+</div>
+<!-- Activity Item 2 -->
+<div class="flex gap-md group">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center border border-secondary/20">
+<span class="material-symbols-outlined text-secondary text-[20px]" data-icon="check_circle">check_circle</span>
+</div>
+<div>
+<p class="font-body-md text-on-surface">New Rental Confirmed <span class="font-label-mono text-secondary">#BOK-9421</span></p>
+<p class="text-label-sm text-on-surface-variant mt-1">15 mins ago • User: David Miller</p>
+</div>
+</div>
+<!-- Activity Item 3 -->
+<div class="flex gap-md group">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-error/10 flex items-center justify-center border border-error/20">
+<span class="material-symbols-outlined text-error text-[20px]" data-icon="report_problem">report_problem</span>
+</div>
+<div>
+<p class="font-body-md text-on-surface">Low Tire Pressure Detected</p>
+<p class="text-label-sm text-on-surface-variant mt-1">1 hour ago • Vehicle <span class="font-label-mono text-error">#CA-883</span></p>
+</div>
+</div>
+<!-- Activity Item 4 -->
+<div class="flex gap-md group">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+<span class="material-symbols-outlined text-primary text-[20px]" data-icon="speed">speed</span>
+</div>
+<div>
+<p class="font-body-md text-on-surface">Telematics update: <span class="font-label-mono">Optimized</span></p>
+<p class="text-label-sm text-on-surface-variant mt-1">2 hours ago • New routes deployed to 24 units</p>
+</div>
+</div>
+<!-- Activity Item 5 -->
+<div class="flex gap-md group">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center border border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant text-[20px]" data-icon="person_add">person_add</span>
+</div>
+<div>
+<p class="font-body-md text-on-surface">New Fleet Manager Added</p>
+<p class="text-label-sm text-on-surface-variant mt-1">5 hours ago • Sarah Jenkins • Admin Level</p>
+</div>
+</div>
+</div>
+<div class="p-lg bg-surface-container-low rounded-b-xl border-t border-outline-variant">
+<div class="flex items-center justify-between mb-md">
+<span class="font-label-sm text-on-surface-variant uppercase">Current Weather</span>
+<span class="flex items-center gap-sm font-label-mono text-on-surface">
+<span class="material-symbols-outlined text-[16px] text-primary" data-icon="wb_sunny">wb_sunny</span>
+                            72°F
+                        </span>
+</div>
+<p class="text-label-sm text-on-surface-variant italic">Ideal conditions for fleet deployment in operational hubs.</p>
+</div>
+</div>
+</div>
+<!-- Footer (Shared Component) -->
+<footer class="mt-xl flex flex-col md:flex-row justify-between items-center py-lg border-t border-outline-variant w-full">
+<div class="flex items-center gap-md mb-md md:mb-0">
+<span class="font-headline-md text-primary">FleetPilot AI</span>
+<span class="text-on-surface-variant font-label-sm border-l border-outline-variant pl-md">© 2024. All rights reserved.</span>
+</div>
+<div class="flex gap-lg">
+<a class="font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="font-label-sm text-on-surface-variant hover:text-primary transition-colors" href="#">Cookie Policy</a>
+</div>
+</footer>
+</main>
+<script>
+        // Simple micro-interactions
+        document.querySelectorAll('button').forEach(button => {
+            button.addEventListener('click', () => {
+                // Example click feedback
+                console.log('Action triggered');
+            });
+        });
+
+        // Simulating live data update every 10 seconds
+        setInterval(() => {
+            const revenueElement = document.querySelector('.text-headline-md.text-on-surface:last-child');
+            if (revenueElement) {
+                // Subtle animation or update logic could go here
+            }
+        }, 10000);
+    </script>
+</body></html>
