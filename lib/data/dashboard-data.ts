@@ -1,4 +1,4 @@
-import type { Activity, AgreementTemplateData, AvailabilityBlock, BankAccount, Customer, FinancialSummary, FinancialTransaction, MaintenanceItem, PayoutRecord, RentalAgreementRecord, Reservation, SubscriptionInfo, UsageMetrics, Vehicle, VehicleStatus } from "@/lib/types";
+import type { Activity, AgreementTemplateData, AvailabilityBlock, BankAccount, Customer, FinancialSummary, FinancialTransaction, MaintenanceItem, PayoutRecord, RentalAgreementRecord, Reservation, SubscriptionInfo, SupportMessage, UsageMetrics, Vehicle, VehicleStatus } from "@/lib/types";
 import { activity, customers, maintenance, reservations, revenueSeries, vehicles } from "@/lib/demo-data";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
 import type { AppSession } from "@/lib/auth/session";
@@ -19,6 +19,7 @@ type DashboardData = {
   reservations: Reservation[];
   revenueSeries: typeof revenueSeries;
   subscriptionInfo: SubscriptionInfo;
+  supportMessages: SupportMessage[];
   usageMetrics: UsageMetrics;
   websiteSettings: WebsiteSettingsData;
   vehicles: Vehicle[];
@@ -136,6 +137,19 @@ export function scopeDemoData(organizationId: string): DashboardData {
     reservations: scope(reservations),
     revenueSeries,
     subscriptionInfo: trialInfo(),
+    supportMessages: [
+      {
+        id: "msg_demo_001",
+        organizationId,
+        subject: "Pickup question",
+        customerName: "Demo Customer",
+        customerEmail: "guest@example.com",
+        reservationRef: "res_001",
+        status: "open",
+        body: "Can I pick up the vehicle 30 minutes earlier than my scheduled reservation time?",
+        createdAt: new Date().toISOString()
+      }
+    ],
     usageMetrics: {
       vehicles: vehicles.length,
       staff: 1,
@@ -167,7 +181,8 @@ export async function getDashboardData(session: AppSession): Promise<DashboardDa
     transactions,
     rentalAgreements,
     agreementTemplate,
-    subscription
+    subscription,
+    supportMessages
   ] = await Promise.all([
     prisma.vehicle.findMany({
       where: { organizationId: session.organization.id },
@@ -225,6 +240,11 @@ export async function getDashboardData(session: AppSession): Promise<DashboardDa
     }),
     prisma.subscription.findUnique({
       where: { organizationId: session.organization.id }
+    }),
+    prisma.message.findMany({
+      where: { organizationId: session.organization.id, channel: "Support" },
+      orderBy: { createdAt: "desc" },
+      take: 100
     })
   ]);
 
@@ -365,6 +385,17 @@ export async function getDashboardData(session: AppSession): Promise<DashboardDa
       nextInvoiceAmount: getPlan(subscription.planId)?.monthlyCents ? getPlan(subscription.planId)!.monthlyCents / 100 : 0,
       paymentMethod: "Managed in Stripe"
     } : trialInfo(dbActivity[0]?.createdAt),
+    supportMessages: supportMessages.map((message) => ({
+      id: message.id,
+      organizationId: message.organizationId,
+      subject: message.subject ?? "Customer question",
+      customerName: message.customerName ?? "Customer",
+      customerEmail: message.customerEmail ?? "",
+      reservationRef: message.reservationRef ?? "",
+      status: message.status === "closed" ? "closed" : "open",
+      body: message.body,
+      createdAt: message.createdAt.toISOString()
+    })),
     usageMetrics: {
       vehicles: dbVehicles.length,
       staff: Math.max(1, dbCustomers.filter((customer) => customer.customerType === "Staff").length || 1),

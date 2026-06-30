@@ -13,6 +13,11 @@ function safeNext(value: string | null) {
   return next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard";
 }
 
+function customerPortalSlug(next: string) {
+  const match = next.match(/^\/([^/?#]+)\/portal(?:$|[?#/])/);
+  return match?.[1] ?? null;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const code = searchParams.get("code");
@@ -45,13 +50,26 @@ export async function GET(request: NextRequest) {
       if (authUser) {
         const email = authUser.email ?? "";
         const fullName = String(authUser.user_metadata?.full_name ?? authUser.user_metadata?.name ?? email);
+        const portalSlug = customerPortalSlug(next);
         const user = await prisma.user.upsert({
           where: { id: authUser.id },
           update: { email, fullName },
           create: { id: authUser.id, email, fullName },
           include: { memberships: { take: 1 } }
         });
-        if (!user.memberships.length) {
+        if (portalSlug) {
+          const org = await prisma.organization.findFirst({
+            where: { OR: [{ slug: portalSlug }, { domain: portalSlug }] },
+            select: { id: true }
+          });
+          if (org && email) {
+            await prisma.customer.upsert({
+              where: { organizationId_email: { organizationId: org.id, email } },
+              update: { name: fullName },
+              create: { organizationId: org.id, name: fullName, email }
+            });
+          }
+        } else if (!user.memberships.length) {
           next = "/onboard";
         }
       }

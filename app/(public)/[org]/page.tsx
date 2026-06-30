@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
-import { Clock, MapPin, Phone, Search, ShieldCheck, SlidersHorizontal, Star } from "lucide-react";
+import { MapPin, Search, ShieldCheck, SlidersHorizontal, Star } from "lucide-react";
 import { getHostProfile, getPublicFleet, getPublicTenant, getReviews } from "@/lib/data/public-data";
 import { VehicleCard } from "@/components/public/vehicle-card";
-import { HostTrust } from "@/components/public/host-trust";
 import { ReviewsSection } from "@/components/public/reviews-section";
 import { appUrl } from "@/lib/billing/customer";
 
@@ -70,12 +69,16 @@ export default async function TenantHomePage({ params, searchParams }: PageProps
   const today = new Date().toISOString().slice(0, 10);
 
   const useCover = tenant?.backgroundStyle === "cover" && tenant.coverImageUrl;
+  const heroVideoUrl = org === "luxedrive" ? "/videos/luxedrive-traffic-bg.mp4" : "";
+  const useHeroVideo = Boolean(heroVideoUrl) && !useCover;
   const heroStyle = useCover
     ? undefined
+    : useHeroVideo
+      ? undefined
     : tenant?.backgroundStyle === "solid"
       ? { background: brand, color: "#fff" }
       : { background: `linear-gradient(135deg, ${brand}20, ${brand}08 42%, transparent 78%)` };
-  const onDarkHero = Boolean(useCover || tenant?.backgroundStyle === "solid");
+  const onDarkHero = Boolean(useCover || useHeroVideo || tenant?.backgroundStyle === "solid");
 
   function chipHref(chipParams: Record<string, string>) {
     const search = new URLSearchParams();
@@ -94,7 +97,24 @@ export default async function TenantHomePage({ params, searchParams }: PageProps
   return (
     <div>
       {/* Hero */}
-      <section className="relative overflow-hidden border-b" style={heroStyle}>
+      <section className={`relative overflow-hidden border-b ${useHeroVideo ? "bg-slate-950" : ""}`} style={heroStyle}>
+        {useHeroVideo ? (
+          <>
+            <video
+              className="absolute inset-0 size-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+              aria-hidden="true"
+            >
+              <source src={heroVideoUrl} type="video/mp4" />
+            </video>
+            <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/35 to-black/65" />
+          </>
+        ) : null}
+
         {useCover ? (
           <div
             className="absolute inset-0 bg-cover bg-center"
@@ -179,29 +199,6 @@ export default async function TenantHomePage({ params, searchParams }: PageProps
         </div>
       </section>
 
-      {/* Info cards */}
-      <section className="mx-auto grid max-w-6xl gap-4 px-4 pt-8 md:grid-cols-3 md:px-6">
-        {[
-          [MapPin, "Service area", tenant?.serviceArea || "Local pickup"],
-          [Clock, "Business hours", tenant?.businessHours || "Flexible pickup by appointment"],
-          [Phone, "Host contact", [tenant?.contactPhone, tenant?.contactEmail].filter(Boolean).join(" · ") || "Shared after booking"]
-        ].map(([Icon, label, value]) => {
-          const IconComponent = Icon as typeof MapPin;
-          return (
-            <div key={String(label)} className="rounded-2xl border bg-card p-5">
-              <IconComponent className="size-5 text-muted-foreground" />
-              <p className="mt-3 text-xs uppercase tracking-wide text-muted-foreground">{String(label)}</p>
-              <p className="mt-1 font-medium">{String(value)}</p>
-            </div>
-          );
-        })}
-      </section>
-
-      {/* Host trust band */}
-      <section className="mx-auto max-w-6xl px-4 pt-8 md:px-6">
-        <HostTrust host={host} brand={brand} />
-      </section>
-
       {/* Fleet */}
       <section className="mx-auto max-w-6xl px-4 pb-2 pt-12 md:px-6">
         <div className="flex items-center gap-3 overflow-x-auto pb-2">
@@ -249,6 +246,19 @@ export default async function TenantHomePage({ params, searchParams }: PageProps
 
       {/* Policies */}
       <section id="policies" className="mx-auto grid max-w-6xl gap-4 px-4 pb-16 md:grid-cols-3 md:px-6">
+        <div className="flex flex-col justify-between gap-3 rounded-2xl border bg-card p-5 md:col-span-3 md:flex-row md:items-center">
+          <div>
+            <h2 className="text-xl font-bold">Need the full booking walkthrough?</h2>
+            <p className="mt-1 text-sm text-muted-foreground">See every step from choosing a car to signing the agreement and pickup.</p>
+          </div>
+          <a
+            href={`/${org}/how-it-works`}
+            className="inline-flex h-10 w-fit items-center justify-center rounded-lg px-4 text-sm font-semibold text-white"
+            style={{ backgroundColor: brand }}
+          >
+            How booking works
+          </a>
+        </div>
         {[
           ["Pickup", tenant?.pickupInstructions],
           ["Deposit", tenant?.depositPolicy || `Refundable deposit: ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(tenant?.depositFee ?? 250)}`],

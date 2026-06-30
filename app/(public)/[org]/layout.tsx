@@ -30,10 +30,10 @@ export default async function PublicTenantLayout({ children, params }: LayoutPro
             <a href={`/${tenant.slug}`} className="rounded-full px-4 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">
               Browse cars
             </a>
-            <a href={`/${tenant.slug}#policies`} className="rounded-full px-4 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">
+            <a href={`/${tenant.slug}/how-it-works`} className="rounded-full px-4 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">
               How it works
             </a>
-            <a href={`/${tenant.slug}#contact`} className="rounded-full px-4 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">
+            <a href={`/${tenant.slug}/help`} className="rounded-full px-4 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">
               Help
             </a>
             <a href={`/${tenant.slug}/portal`} className="rounded-full px-4 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">
@@ -47,6 +47,12 @@ export default async function PublicTenantLayout({ children, params }: LayoutPro
               className="hidden rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground sm:inline-block"
             >
               Become a host
+            </a>
+            <a
+              href={`/${tenant.slug}/signup`}
+              className="hidden rounded-full px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground sm:inline-block"
+            >
+              Sign up
             </a>
             <a
               href={`/${tenant.slug}/portal`}

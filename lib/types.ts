@@ -104,6 +104,18 @@ export type Activity = {
   createdAt: string;
 };
 
+export type SupportMessage = {
+  id: string;
+  organizationId: string;
+  subject: string;
+  customerName: string;
+  customerEmail: string;
+  reservationRef: string;
+  status: "open" | "closed";
+  body: string;
+  createdAt: string;
+};
+
 export type BankAccount = {
   id: string;
   organizationId: string;

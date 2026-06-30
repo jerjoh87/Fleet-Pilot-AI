@@ -1,5 +1,7 @@
 import { Download, Search } from "lucide-react";
 import { getPortalReservations, getPublicTenant } from "@/lib/data/public-data";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { currency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -9,11 +11,19 @@ export default async function CustomerPortalPage({ params, searchParams }: PageP
   const query = (await searchParams) as { reservation?: string; email?: string };
   const tenant = await getPublicTenant(org);
   const brand = tenant?.brandColor ?? "#166534";
+  const authUser = isSupabaseConfigured()
+    ? await createSupabaseServerClient()
+        .then((supabase) => supabase.auth.getUser())
+        .then(({ data }) => data.user)
+        .catch(() => null)
+    : null;
+  const customerEmail = query.email || authUser?.email || "";
   const reservations = await getPortalReservations(org, {
     reservationId: query.reservation,
-    email: query.email
+    email: customerEmail
   });
-  const searched = Boolean(query.reservation || query.email);
+  const searched = Boolean(query.reservation || customerEmail);
+  const slug = tenant?.slug ?? org;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 md:px-6">
@@ -23,6 +33,34 @@ export default async function CustomerPortalPage({ params, searchParams }: PageP
         <p className="mt-3 text-muted-foreground">
           View trip details, payment status, and download your rental agreement.
         </p>
+        {authUser?.email ? (
+          <div className="mt-4 rounded-2xl border bg-card p-4 text-sm">
+            <p className="font-medium">Signed in as {authUser.email}</p>
+            <p className="mt-1 text-muted-foreground">Your reservations are loaded automatically from this email.</p>
+          </div>
+        ) : null}
+        <div className="mt-5 flex flex-wrap items-center gap-3">
+          <a
+            href={`/${slug}/signup`}
+            className="inline-flex h-10 items-center justify-center rounded-lg px-4 text-sm font-semibold text-white"
+            style={{ backgroundColor: brand }}
+          >
+            Create customer account
+          </a>
+          {!authUser ? (
+            <>
+              <a href={`/api/auth/oauth?provider=google&next=${encodeURIComponent(`/${slug}/portal`)}`} className="inline-flex h-10 items-center justify-center rounded-lg border px-4 text-sm font-semibold hover:bg-muted">
+                Sign in with Gmail
+              </a>
+              <a href={`/api/auth/oauth?provider=yahoo&next=${encodeURIComponent(`/${slug}/portal`)}`} className="inline-flex h-10 items-center justify-center rounded-lg border px-4 text-sm font-semibold hover:bg-muted">
+                Sign in with Yahoo
+              </a>
+            </>
+          ) : null}
+          <a href={`/${slug}`} className="inline-flex h-10 items-center justify-center rounded-lg border px-4 text-sm font-semibold hover:bg-muted">
+            Browse cars
+          </a>
+        </div>
       </div>
 
       <form className="mt-8 grid gap-3 rounded-2xl border bg-card p-4 shadow-sm md:grid-cols-[1fr_1fr_auto]">
@@ -40,7 +78,7 @@ export default async function CustomerPortalPage({ params, searchParams }: PageP
           <input
             name="email"
             type="email"
-            defaultValue={query.email ?? ""}
+            defaultValue={customerEmail}
             placeholder="you@example.com"
             className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-sm"
           />

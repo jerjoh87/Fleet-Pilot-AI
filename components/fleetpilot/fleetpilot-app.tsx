@@ -15,8 +15,10 @@ import {
   ExternalLink,
   Gauge,
   HelpCircle,
+  Inbox,
   KeyRound,
   LogOut,
+  Mail,
   MapPin,
   Menu,
   Plus,
@@ -41,6 +43,7 @@ import {
 import { toast } from "sonner";
 import { archiveVehicleAction, createAvailabilityBlockAction, createContractAction, createCustomerAction, createDamageReportAction, createMaintenanceAction, createReservationAction, createVehicleAction, deleteAvailabilityBlockAction, updateVehicleAction, updateWebsiteSettingsAction } from "@/app/dashboard/actions";
 import { openConnectDashboardAction, removeBankAccountAction, saveAgreementTemplateAction, saveBankingInfoAction, startConnectOnboardingAction } from "@/app/dashboard/financials/actions";
+import { closeSupportMessageAction } from "@/app/dashboard/support/actions";
 import { AiWorkspace } from "@/components/fleetpilot/ai-workspace";
 import { BillingPanel } from "@/components/fleetpilot/billing-panel";
 import { InsurancePanel } from "@/components/fleetpilot/insurance-panel";
@@ -50,13 +53,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { availabilityBlockSchema, customerSchema, damageReportSchema, maintenanceSchema, reservationSchema, vehicleSchema, vehicleUpdateSchema } from "@/lib/schemas";
-import type { Activity as ActivityItem, AgreementTemplateData, AvailabilityBlock, BankAccount, Customer, FinancialSummary, FinancialTransaction, MaintenanceItem, PayoutRecord, RentalAgreementRecord, Reservation, SubscriptionInfo, UsageMetrics, Vehicle, VehicleStatus } from "@/lib/types";
+import type { Activity as ActivityItem, AgreementTemplateData, AvailabilityBlock, BankAccount, Customer, FinancialSummary, FinancialTransaction, MaintenanceItem, PayoutRecord, RentalAgreementRecord, Reservation, SubscriptionInfo, SupportMessage, UsageMetrics, Vehicle, VehicleStatus } from "@/lib/types";
 import type { AppSession } from "@/lib/auth/session";
 import type { WebsiteSettingsData } from "@/lib/data/dashboard-data";
 import { HostProfilePreview, type ProfileDraft } from "@/components/fleetpilot/host-profile-preview";
 import { currency, number } from "@/lib/utils";
 
-type Section = "Landing Page" | "Operations Dashboard" | "Fleet Management" | "Booking Portal" | "Financials" | "AI Workspace" | "Billing" | "Insurance" | "Analytics" | "Maintenance" | "Settings";
+type Section = "Landing Page" | "Operations Dashboard" | "Fleet Management" | "Booking Portal" | "Support Inbox" | "Financials" | "AI Workspace" | "Billing" | "Insurance" | "Analytics" | "Maintenance" | "Settings";
 
 type Props = {
   initialActivity: ActivityItem[];
@@ -74,6 +77,7 @@ type Props = {
   initialRevenueSeries: Array<{ month: string; revenue: number; bookings: number; profit: number }>;
   initialSession: AppSession;
   initialSubscriptionInfo: SubscriptionInfo;
+  initialSupportMessages: SupportMessage[];
   initialUsageMetrics: UsageMetrics;
   initialWebsiteSettings: WebsiteSettingsData;
   initialVehicles: Vehicle[];
@@ -86,6 +90,7 @@ const sections: Array<{ name: Section; icon: React.ComponentType<{ className?: s
   { name: "Operations Dashboard", icon: BarChart3 },
   { name: "Fleet Management", icon: Car },
   { name: "Booking Portal", icon: CalendarDays },
+  { name: "Support Inbox", icon: Inbox },
   { name: "Financials", icon: Landmark },
   { name: "AI Workspace", icon: Sparkles },
   { name: "Billing", icon: CreditCard },
@@ -130,6 +135,7 @@ export function FleetPilotApp({
   initialRevenueSeries,
   initialSession,
   initialSubscriptionInfo,
+  initialSupportMessages,
   initialUsageMetrics,
   initialWebsiteSettings,
   initialVehicles,
@@ -152,6 +158,7 @@ export function FleetPilotApp({
   const [maintenanceItems, setMaintenanceItems] = React.useState(initialMaintenance);
   const [websiteSettings, setWebsiteSettings] = React.useState(initialWebsiteSettings);
   const [activity, setActivity] = React.useState(initialActivity);
+  const [supportMessages, setSupportMessages] = React.useState(initialSupportMessages);
   const [query, setQuery] = React.useState("");
   const organizationId = initialOrganization.id;
 
@@ -556,6 +563,19 @@ export function FleetPilotApp({
     }
   }
 
+  async function closeSupportMessage(messageId: string) {
+    const previous = supportMessages;
+    setSupportMessages((current) => current.map((message) => message.id === messageId ? { ...message, status: "closed" } : message));
+    try {
+      const result = await closeSupportMessageAction(messageId);
+      result.ok ? toast.success(result.message) : toast.error(result.message);
+      if (!result.ok) setSupportMessages(previous);
+    } catch (error) {
+      setSupportMessages(previous);
+      toast.error(error instanceof Error ? error.message : "Support request could not be closed");
+    }
+  }
+
   const shell = (
     <Sidebar
       active={section}
@@ -657,6 +677,9 @@ export function FleetPilotApp({
             ) : null}
             {section === "Booking Portal" ? (
               <BookingPortal customers={scopedCustomers} vehicles={scopedVehicles} reservations={scopedReservations} onCreateContract={createContract} onCreateCustomer={createCustomer} onCreateReservation={createReservation} />
+            ) : null}
+            {section === "Support Inbox" ? (
+              <SupportInbox messages={supportMessages} onClose={closeSupportMessage} />
             ) : null}
             {section === "Financials" ? (
               <FinancialsPanel
@@ -1171,6 +1194,80 @@ function BookingPortal({
           </div>
         </Panel>
       </div>
+    </div>
+  );
+}
+
+function SupportInbox({
+  messages,
+  onClose
+}: {
+  messages: SupportMessage[];
+  onClose: (messageId: string) => void;
+}) {
+  const openMessages = messages.filter((message) => message.status === "open");
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+        <div>
+          <h1 className="text-4xl font-black tracking-tight text-white">Support Inbox</h1>
+          <p className="mt-2 text-slate-400">Customer questions submitted from the public Help page.</p>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Kpi label="Open Requests" value={number.format(openMessages.length)} detail="Needs admin reply" icon={Inbox} tone="blue" />
+          <Kpi label="Total Requests" value={number.format(messages.length)} detail="Latest 100 loaded" icon={Mail} tone="emerald" />
+        </div>
+      </div>
+
+      <Panel title="Customer Questions">
+        {messages.length ? (
+          <div className="grid gap-4">
+            {messages.map((message) => {
+              const replyHref = message.customerEmail
+                ? `mailto:${message.customerEmail}?subject=${encodeURIComponent(`Re: ${message.subject}`)}`
+                : "#";
+              return (
+                <article key={message.id} className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="font-semibold text-white">{message.subject}</h2>
+                        <span className={`rounded-full border px-2.5 py-1 text-xs ${message.status === "open" ? "border-amber-300/20 bg-amber-400/10 text-amber-100" : "border-emerald-300/20 bg-emerald-400/10 text-emerald-100"}`}>
+                          {message.status}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-sm text-slate-400">
+                        {message.customerName} · {message.customerEmail || "No email"}{message.reservationRef ? ` · ${message.reservationRef}` : ""}
+                      </p>
+                      <p className="mt-1 text-xs text-slate-500">{new Date(message.createdAt).toLocaleString()}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <a
+                        href={replyHref}
+                        className={`inline-flex h-9 items-center justify-center gap-2 rounded-md border border-white/10 bg-white/[0.04] px-3 text-sm font-medium text-white hover:bg-white/[0.08] ${message.customerEmail ? "" : "pointer-events-none opacity-50"}`}
+                      >
+                        <Mail className="size-4" />
+                        Reply
+                      </a>
+                      {message.status === "open" ? (
+                        <Button className="h-9 border-emerald-300/20 bg-emerald-400/10 px-3 text-emerald-100 hover:bg-emerald-400/20" type="button" variant="outline" onClick={() => onClose(message.id)}>
+                          Close
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                  <p className="mt-4 whitespace-pre-wrap rounded-xl bg-black/20 p-4 text-sm leading-6 text-slate-300">{message.body}</p>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-white/10 p-10 text-center text-slate-400">
+            No customer questions yet. Requests submitted from the public Help page will appear here.
+          </div>
+        )}
+      </Panel>
     </div>
   );
 }

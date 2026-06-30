@@ -469,8 +469,15 @@ model Message {
   organizationId String
   customerId     String?
   channel        String
+  subject        String?
+  customerName   String?
+  customerEmail  String?
+  reservationRef String?
+  status         String @default("open")
   body           String
   createdAt      DateTime @default(now())
+
+  @@index([organizationId, channel, status, createdAt])
 }
 
 model Notification {

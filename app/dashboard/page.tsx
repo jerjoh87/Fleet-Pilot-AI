@@ -31,6 +31,7 @@ export default async function DashboardPage() {
       initialRevenueSeries={data.revenueSeries}
       initialSession={session}
       initialSubscriptionInfo={data.subscriptionInfo}
+      initialSupportMessages={data.supportMessages}
       initialUsageMetrics={data.usageMetrics}
       initialWebsiteSettings={data.websiteSettings}
       initialVehicles={data.vehicles}
