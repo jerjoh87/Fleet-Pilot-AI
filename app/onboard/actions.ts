@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAuthenticatedUser, slugifyOrganizationName } from "@/lib/auth/session";
+import { syncUserProfile } from "@/lib/auth/users";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
 
 const onboardSchema = z.object({
@@ -39,13 +40,9 @@ export async function createOrganizationAction(formData: FormData) {
     tosAccepted: formData.get("tosAccepted") ?? ""
   });
 
-  await prisma.$transaction(async (tx) => {
-    await tx.user.upsert({
-      where: { id: user.id },
-      update: { email: user.email, fullName: user.fullName },
-      create: { id: user.id, email: user.email, fullName: user.fullName }
-    });
+  const profile = await syncUserProfile(user);
 
+  await prisma.$transaction(async (tx) => {
     const organization = await tx.organization.create({
       data: {
         name: parsed.organizationName,
@@ -53,7 +50,7 @@ export async function createOrganizationAction(formData: FormData) {
         domain: parsed.domain || `${parsed.slug}.fleetpilot.ai`,
         members: {
           create: {
-            userId: user.id,
+            userId: profile.id,
             role: "OWNER",
             tosAcceptedAt: new Date()
           }
@@ -78,7 +75,7 @@ export async function createOrganizationAction(formData: FormData) {
     await tx.activityLog.create({
       data: {
         organizationId: organization.id,
-        actorUserId: user.id,
+        actorUserId: profile.id,
         action: "created organization",
         target: parsed.organizationName
       }

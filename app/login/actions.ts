@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
+import { syncUserProfile } from "@/lib/auth/users";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -96,11 +97,7 @@ export async function signUpAction(formData: FormData) {
 
   if (isDatabaseConfigured() && signupResult.data.user) {
     try {
-      await prisma.user.upsert({
-        where: { id: signupResult.data.user.id },
-        update: { email, fullName },
-        create: { id: signupResult.data.user.id, email, fullName }
-      });
+      await syncUserProfile({ id: signupResult.data.user.id, email, fullName });
     } catch (error) {
       console.error("Host signup profile sync failed", error);
       authError("Your login was created, but we could not start host setup yet. Please sign in and try again.", errorPath);

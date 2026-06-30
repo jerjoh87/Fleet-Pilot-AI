@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { Role } from "@/lib/types";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
+import { resolveUserProfile, syncUserProfile } from "@/lib/auth/users";
 import { organization as demoOrganization } from "@/lib/demo-data";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -65,17 +66,14 @@ export async function getAppSession(): Promise<AppSession | null> {
     };
   }
 
-  const user = await prisma.user.upsert({
-    where: { id: authUser.id },
-    update: {
-      email: authUser.email ?? "",
-      fullName: String(authUser.user_metadata?.full_name ?? authUser.email ?? "Fleet Operator")
-    },
-    create: {
-      id: authUser.id,
-      email: authUser.email ?? "",
-      fullName: String(authUser.user_metadata?.full_name ?? authUser.email ?? "Fleet Operator")
-    },
+  const profile = await syncUserProfile({
+    id: authUser.id,
+    email: authUser.email ?? "",
+    fullName: String(authUser.user_metadata?.full_name ?? authUser.email ?? "Fleet Operator")
+  });
+
+  const user = await prisma.user.findUniqueOrThrow({
+    where: { id: profile.id },
     include: {
       memberships: {
         include: { organization: true },
@@ -122,10 +120,22 @@ export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> 
     return null;
   }
 
-  return {
+  const user = {
     id: authUser.id,
     email: authUser.email ?? "",
     fullName: String(authUser.user_metadata?.full_name ?? authUser.email ?? "Fleet Operator")
+  };
+
+  if (!isDatabaseConfigured()) {
+    return user;
+  }
+
+  const profile = await resolveUserProfile(user);
+
+  return {
+    id: profile.id,
+    email: profile.email,
+    fullName: profile.fullName ?? profile.email
   };
 }
 
