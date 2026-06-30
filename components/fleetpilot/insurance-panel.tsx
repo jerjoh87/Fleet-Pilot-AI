@@ -101,9 +101,15 @@ export function InsurancePanel({ data }: { data: InsuranceDashboard }) {
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {upload.documents.map((doc) => (
-                        <span key={doc.kind} className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2.5 py-1 text-xs text-slate-300">
-                          <FileText className="size-3.5" /> {doc.kind.replace(/_/g, " ").toLowerCase()}
-                        </span>
+                        <a
+                          key={doc.id}
+                          href={`/api/insurance-docs/${doc.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-full bg-white/[0.06] px-2.5 py-1 text-xs text-slate-300 hover:bg-white/[0.12] hover:text-white"
+                        >
+                          <FileText className="size-3.5" /> {doc.fileName ?? doc.kind.replace(/_/g, " ").toLowerCase()}
+                        </a>
                       ))}
                     </div>
                   </div>

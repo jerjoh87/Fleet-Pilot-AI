@@ -11,6 +11,7 @@ import {
 import { currency } from "@/lib/utils";
 
 type Props = {
+  slug: string;
   quotes: InsuranceQuote[];
   days: number;
   brandColor: string;
@@ -26,6 +27,7 @@ type Props = {
 const fmt = (cents: number) => currency.format(cents / 100);
 
 export function InsuranceSelection({
+  slug,
   quotes,
   days,
   brandColor,
@@ -161,9 +163,29 @@ export function InsuranceSelection({
               <Field label="Expiration date" required>
                 <input type="date" className={inputCls} value={own.expirationDate} onChange={(e) => updateOwn({ expirationDate: e.target.value })} />
               </Field>
-              <FileField label="Insurance card — front" required name={own.cardFrontName} onPick={(name) => updateOwn({ cardFrontName: name })} />
-              <FileField label="Insurance card — back" required name={own.cardBackName} onPick={(name) => updateOwn({ cardBackName: name })} />
-              <FileField label="Declaration page (optional)" name={own.declarationName} onPick={(name) => updateOwn({ declarationName: name })} />
+              <FileField
+                label="Insurance card — front"
+                required
+                slug={slug}
+                path={own.cardFrontName}
+                fileLabel={own.cardFrontLabel}
+                onUploaded={(path, label) => updateOwn({ cardFrontName: path, cardFrontLabel: label })}
+              />
+              <FileField
+                label="Insurance card — back"
+                required
+                slug={slug}
+                path={own.cardBackName}
+                fileLabel={own.cardBackLabel}
+                onUploaded={(path, label) => updateOwn({ cardBackName: path, cardBackLabel: label })}
+              />
+              <FileField
+                label="Declaration page (optional)"
+                slug={slug}
+                path={own.declarationName}
+                fileLabel={own.declarationLabel}
+                onUploaded={(path, label) => updateOwn({ declarationName: path, declarationLabel: label })}
+              />
               <Field label="Additional notes" className="sm:col-span-2">
                 <textarea rows={2} className={inputCls} value={own.additionalNotes} onChange={(e) => updateOwn({ additionalNotes: e.target.value })} />
               </Field>
@@ -214,20 +236,71 @@ function Field({ label, required, className, children }: { label: string; requir
   );
 }
 
-function FileField({ label, required, name, onPick }: { label: string; required?: boolean; name: string; onPick: (name: string) => void }) {
+function FileField({
+  label,
+  required,
+  slug,
+  path,
+  fileLabel,
+  onUploaded
+}: {
+  label: string;
+  required?: boolean;
+  slug: string;
+  path: string;
+  fileLabel: string;
+  onUploaded: (storagePath: string, fileName: string) => void;
+}) {
+  const [status, setStatus] = React.useState<"idle" | "uploading" | "error">("idle");
+  const [error, setError] = React.useState("");
+
+  async function handlePick(file: File | undefined) {
+    if (!file) return;
+    setStatus("uploading");
+    setError("");
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      body.append("slug", slug);
+      const res = await fetch("/api/public/insurance-upload", { method: "POST", body });
+      const data = (await res.json()) as { storagePath?: string; fileName?: string; error?: string };
+      if (!res.ok || !data.storagePath) {
+        throw new Error(data.error || "Upload failed.");
+      }
+      onUploaded(data.storagePath, data.fileName ?? file.name);
+      setStatus("idle");
+    } catch (err) {
+      setStatus("error");
+      setError(err instanceof Error ? err.message : "Upload failed.");
+      onUploaded("", "");
+    }
+  }
+
+  const uploaded = Boolean(path);
+  const display = status === "uploading" ? "Uploading…" : fileLabel || "Choose file…";
+
   return (
     <label className="text-sm">
-      <span className="text-muted-foreground">{label}{required ? <span className="text-destructive"> *</span> : null}</span>
-      <span className="mt-1 flex h-11 cursor-pointer items-center gap-2 rounded-lg border border-dashed bg-background px-3 text-sm text-muted-foreground hover:bg-muted/50">
-        <Upload className="size-4 shrink-0" />
-        <span className="truncate">{name || "Choose file…"}</span>
+      <span className="text-muted-foreground">
+        {label}
+        {required ? <span className="text-destructive"> *</span> : null}
+      </span>
+      <span
+        className={`mt-1 flex h-11 cursor-pointer items-center gap-2 rounded-lg border border-dashed bg-background px-3 text-sm hover:bg-muted/50 ${
+          uploaded ? "text-foreground" : "text-muted-foreground"
+        }`}
+      >
+        {uploaded ? <Check className="size-4 shrink-0 text-emerald-600" /> : <Upload className="size-4 shrink-0" />}
+        <span className="truncate">{display}</span>
         <input
           type="file"
           accept="image/*,application/pdf"
           className="hidden"
-          onChange={(e) => onPick(e.target.files?.[0]?.name ?? "")}
+          disabled={status === "uploading"}
+          onChange={(e) => handlePick(e.target.files?.[0])}
         />
       </span>
+      {error ? <span className="mt-1 block text-xs text-destructive">{error}</span> : null}
     </label>
   );
 }

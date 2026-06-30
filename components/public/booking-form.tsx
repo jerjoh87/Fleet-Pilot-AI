@@ -275,6 +275,7 @@ export function BookingForm({
         </fieldset>
 
         <InsuranceSelection
+          slug={slug}
           quotes={bookingInsurance.quotes}
           days={days}
           brandColor={brandColor}

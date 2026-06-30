@@ -19,9 +19,13 @@ const ownInsuranceSchema = z.object({
   policyHolderName: z.string().min(1),
   expirationDate: z.string().optional().default(""),
   additionalNotes: z.string().optional().default(""),
+  // *Name fields carry the uploaded Storage path; *Label the original filename.
   cardFrontName: z.string().optional().default(""),
+  cardFrontLabel: z.string().optional().default(""),
   cardBackName: z.string().optional().default(""),
-  declarationName: z.string().optional().default("")
+  cardBackLabel: z.string().optional().default(""),
+  declarationName: z.string().optional().default(""),
+  declarationLabel: z.string().optional().default("")
 });
 
 const insuranceSchema = z.discriminatedUnion("type", [
@@ -59,12 +63,19 @@ const bookingSchema = z.object({
   })
 });
 
-/** Build document metadata from the own-insurance file selections. */
-function ownInsuranceDocs(own: { cardFrontName?: string; cardBackName?: string; declarationName?: string }) {
+/** Build document metadata from the uploaded own-insurance files (Storage paths). */
+function ownInsuranceDocs(own: {
+  cardFrontName?: string;
+  cardFrontLabel?: string;
+  cardBackName?: string;
+  cardBackLabel?: string;
+  declarationName?: string;
+  declarationLabel?: string;
+}) {
   const docs: { kind: "CARD_FRONT" | "CARD_BACK" | "DECLARATION_PAGE"; storagePath: string; fileName: string }[] = [];
-  if (own.cardFrontName) docs.push({ kind: "CARD_FRONT", storagePath: `pending-upload/${own.cardFrontName}`, fileName: own.cardFrontName });
-  if (own.cardBackName) docs.push({ kind: "CARD_BACK", storagePath: `pending-upload/${own.cardBackName}`, fileName: own.cardBackName });
-  if (own.declarationName) docs.push({ kind: "DECLARATION_PAGE", storagePath: `pending-upload/${own.declarationName}`, fileName: own.declarationName });
+  if (own.cardFrontName) docs.push({ kind: "CARD_FRONT", storagePath: own.cardFrontName, fileName: own.cardFrontLabel || "insurance-card-front" });
+  if (own.cardBackName) docs.push({ kind: "CARD_BACK", storagePath: own.cardBackName, fileName: own.cardBackLabel || "insurance-card-back" });
+  if (own.declarationName) docs.push({ kind: "DECLARATION_PAGE", storagePath: own.declarationName, fileName: own.declarationLabel || "declaration-page" });
   return docs;
 }
 

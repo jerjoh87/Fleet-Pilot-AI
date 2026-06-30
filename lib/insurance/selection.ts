@@ -6,9 +6,15 @@ export type OwnInsuranceForm = {
   policyHolderName: string;
   expirationDate: string;
   additionalNotes: string;
+  // The *Name fields hold the Storage path returned by the upload endpoint
+  // (empty until the file has finished uploading). The *Label fields hold the
+  // original filename — shown in the UI and persisted as the document name.
   cardFrontName: string;
+  cardFrontLabel: string;
   cardBackName: string;
+  cardBackLabel: string;
   declarationName: string;
+  declarationLabel: string;
 };
 
 export type InsuranceSelectionValue =
@@ -24,8 +30,11 @@ export const emptyOwnInsurance = (): OwnInsuranceForm => ({
   expirationDate: "",
   additionalNotes: "",
   cardFrontName: "",
+  cardFrontLabel: "",
   cardBackName: "",
-  declarationName: ""
+  cardBackLabel: "",
+  declarationName: "",
+  declarationLabel: ""
 });
 
 /** Whether a selection is complete enough to proceed to payment, given the owner policy. */

@@ -426,11 +426,22 @@ function SignedInPortal({
                 </div>
                 <span className="shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium">{upload.status}</span>
               </div>
-              <p className="mt-3 text-xs text-muted-foreground">
-                {upload.documentCount > 0
-                  ? `${upload.documentCount} document${upload.documentCount === 1 ? "" : "s"} on file`
-                  : "No documents attached"}
-              </p>
+              {upload.documents.length ? (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {upload.documents.map((doc) => (
+                    <a
+                      key={doc.id}
+                      href={`/api/insurance-docs/${doc.id}`}
+                      className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                    >
+                      <Download className="size-3.5" />
+                      {doc.fileName}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-3 text-xs text-muted-foreground">No documents attached</p>
+              )}
             </div>
           ))}
           {!insuranceUploads.length && !insurancePurchases.length ? (

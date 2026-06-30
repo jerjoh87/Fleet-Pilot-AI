@@ -107,7 +107,7 @@ export type PortalInsuranceUpload = {
   policyHolderName: string;
   expirationDate: string | null;
   status: string;
-  documentCount: number;
+  documents: { id: string; fileName: string; kind: string }[];
 };
 
 export type PortalInsurancePurchase = {
@@ -621,14 +621,21 @@ export async function getPortalAccount(slug: string, email: string): Promise<Por
     })
   ]);
 
-  const docCounts = uploads.length
-    ? await prisma.insuranceDocument.groupBy({
-        by: ["uploadId"],
+  const docs = uploads.length
+    ? await prisma.insuranceDocument.findMany({
         where: { uploadId: { in: uploads.map((upload) => upload.id) } },
-        _count: { _all: true }
+        orderBy: { createdAt: "asc" }
       })
     : [];
-  const docCountByUpload = new Map(docCounts.map((row) => [row.uploadId, row._count._all]));
+  const docsByUpload = new Map<string, typeof docs>();
+  for (const doc of docs) {
+    if (!doc.uploadId) continue;
+    const list = docsByUpload.get(doc.uploadId) ?? [];
+    list.push(doc);
+    docsByUpload.set(doc.uploadId, list);
+  }
+  const labelForKind = (kind: string) =>
+    kind === "CARD_FRONT" ? "Insurance card (front)" : kind === "CARD_BACK" ? "Insurance card (back)" : "Declaration page";
 
   return {
     profile: {
@@ -684,7 +691,11 @@ export async function getPortalAccount(slug: string, email: string): Promise<Por
       policyHolderName: upload.policyHolderName,
       expirationDate: upload.expirationDate ? toDateOnly(upload.expirationDate) : null,
       status: reservationStatusLabel(upload.status),
-      documentCount: docCountByUpload.get(upload.id) ?? 0
+      documents: (docsByUpload.get(upload.id) ?? []).map((doc) => ({
+        id: doc.id,
+        fileName: doc.fileName ?? labelForKind(doc.kind),
+        kind: doc.kind
+      }))
     })),
     insurancePurchases: purchases.map((purchase) => ({
       id: purchase.id,

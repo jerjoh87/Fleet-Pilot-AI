@@ -241,7 +241,7 @@ export type InsuranceUploadRow = {
   policyHolderName: string;
   expirationDate: string | null;
   status: string;
-  documents: { kind: string; fileName: string | null }[];
+  documents: { id: string; kind: string; fileName: string | null }[];
   createdAt: string;
 };
 
@@ -277,8 +277,8 @@ function demoDashboard(settings: InsuranceSettings): InsuranceDashboard {
         expirationDate: "2026-12-01",
         status: "PENDING",
         documents: [
-          { kind: "CARD_FRONT", fileName: "geico-front.jpg" },
-          { kind: "CARD_BACK", fileName: "geico-back.jpg" }
+          { id: "demo_doc_1", kind: "CARD_FRONT", fileName: "geico-front.jpg" },
+          { id: "demo_doc_2", kind: "CARD_BACK", fileName: "geico-back.jpg" }
         ],
         createdAt: new Date().toISOString().slice(0, 10)
       }
@@ -345,7 +345,7 @@ export async function getInsuranceDashboard(organizationId: string | null | unde
     policyHolderName: u.policyHolderName,
     expirationDate: u.expirationDate ? u.expirationDate.toISOString().slice(0, 10) : null,
     status: u.status,
-    documents: docs.filter((d) => d.uploadId === u.id).map((d) => ({ kind: d.kind, fileName: d.fileName })),
+    documents: docs.filter((d) => d.uploadId === u.id).map((d) => ({ id: d.id, kind: d.kind, fileName: d.fileName })),
     createdAt: u.createdAt.toISOString().slice(0, 10)
   }));
 
