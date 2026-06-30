@@ -73,6 +73,63 @@ export type PortalReservation = {
   contractSigned: boolean;
 };
 
+export type PortalProfile = {
+  name: string;
+  email: string;
+  phone: string | null;
+  licenseStatus: string;
+  memberSince: string;
+};
+
+export type PortalPayment = {
+  id: string;
+  reservationId: string;
+  vehicleName: string;
+  amountCents: number;
+  kind: string;
+  status: string;
+  date: string;
+};
+
+export type PortalAgreement = {
+  reservationId: string;
+  vehicleName: string;
+  legalName: string;
+  agreedAt: string;
+  status: string;
+  downloadHref: string;
+};
+
+export type PortalInsuranceUpload = {
+  id: string;
+  insuranceCompany: string;
+  policyNumber: string;
+  policyHolderName: string;
+  expirationDate: string | null;
+  status: string;
+  documentCount: number;
+};
+
+export type PortalInsurancePurchase = {
+  id: string;
+  planName: string;
+  coverageSummary: string;
+  totalPriceCents: number;
+  policyNumber: string | null;
+  status: string;
+  startsAt: string | null;
+  endsAt: string | null;
+};
+
+export type PortalAccount = {
+  profile: PortalProfile | null;
+  reservations: PortalReservation[];
+  payments: PortalPayment[];
+  agreements: PortalAgreement[];
+  insuranceUploads: PortalInsuranceUpload[];
+  insurancePurchases: PortalInsurancePurchase[];
+};
+
 const vehicleStatusMap: Record<string, VehicleStatus> = {
   AVAILABLE: "Available",
   RESERVED: "Reserved",
@@ -498,6 +555,148 @@ export async function getPortalReservations(
       contractSigned: Boolean(reservation.contract?.signedAt)
     };
   });
+}
+
+const DEFAULT_VEHICLE_IMAGE =
+  "https://images.unsplash.com/photo-1542362567-b07e54358753?auto=format&fit=crop&w=900&q=80";
+
+/**
+ * Everything a signed-in customer needs in one place — profile, booking
+ * history, receipts, signed agreements, and insurance — keyed off their
+ * (trusted) authenticated email so no manual reservation lookup is required.
+ */
+export async function getPortalAccount(slug: string, email: string): Promise<PortalAccount> {
+  const empty: PortalAccount = {
+    profile: null,
+    reservations: [],
+    payments: [],
+    agreements: [],
+    insuranceUploads: [],
+    insurancePurchases: []
+  };
+
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail || !isDatabaseConfigured()) return empty;
+
+  const org = await prisma.organization.findFirst({
+    where: { OR: [{ slug }, { domain: slug }] },
+    select: { id: true }
+  });
+  if (!org) return empty;
+
+  const customer = await prisma.customer.findFirst({
+    where: { organizationId: org.id, email: { equals: normalizedEmail, mode: "insensitive" } }
+  });
+  if (!customer) return empty;
+
+  const reservations = await prisma.reservation.findMany({
+    where: { organizationId: org.id, customerId: customer.id },
+    include: {
+      vehicle: { include: { images: true } },
+      payments: { orderBy: { createdAt: "desc" } },
+      contract: true,
+      rentalAgreement: true
+    },
+    orderBy: { startsAt: "desc" }
+  });
+
+  const reservationIds = reservations.map((reservation) => reservation.id);
+  const vehicleLabel = (reservation: (typeof reservations)[number]) =>
+    `${reservation.vehicle.year} ${reservation.vehicle.make} ${reservation.vehicle.model}`;
+
+  const [uploads, purchases] = await Promise.all([
+    prisma.customerInsuranceUpload.findMany({
+      where: {
+        organizationId: org.id,
+        OR: [{ customerId: customer.id }, ...(reservationIds.length ? [{ reservationId: { in: reservationIds } }] : [])]
+      },
+      orderBy: { createdAt: "desc" }
+    }),
+    prisma.insurancePurchase.findMany({
+      where: {
+        organizationId: org.id,
+        OR: [{ customerId: customer.id }, ...(reservationIds.length ? [{ reservationId: { in: reservationIds } }] : [])]
+      },
+      orderBy: { createdAt: "desc" }
+    })
+  ]);
+
+  const docCounts = uploads.length
+    ? await prisma.insuranceDocument.groupBy({
+        by: ["uploadId"],
+        where: { uploadId: { in: uploads.map((upload) => upload.id) } },
+        _count: { _all: true }
+      })
+    : [];
+  const docCountByUpload = new Map(docCounts.map((row) => [row.uploadId, row._count._all]));
+
+  return {
+    profile: {
+      name: customer.name,
+      email: customer.email,
+      phone: customer.phone,
+      licenseStatus: customer.licenseStatus,
+      memberSince: customer.createdAt.toLocaleString("en-US", { month: "long", year: "numeric" })
+    },
+    reservations: reservations.map((reservation) => {
+      const paid = reservation.payments.some((payment) => payment.status.toLowerCase() === "paid");
+      const latestPayment = reservation.payments[0]?.status;
+      return {
+        id: reservation.id,
+        customerName: customer.name,
+        customerEmail: customer.email,
+        vehicleName: vehicleLabel(reservation),
+        vehicleImage: reservation.vehicle.images[0]?.url ?? DEFAULT_VEHICLE_IMAGE,
+        startsAt: toDateOnly(reservation.startsAt),
+        endsAt: toDateOnly(reservation.endsAt),
+        status: reservationStatusLabel(reservation.status),
+        totalCents: reservation.totalCents,
+        depositCents: reservation.depositCents,
+        paymentStatus: paid ? "Paid" : latestPayment ? reservationStatusLabel(latestPayment) : "Pending",
+        contractSigned: Boolean(reservation.contract?.signedAt || reservation.rentalAgreement)
+      };
+    }),
+    payments: reservations.flatMap((reservation) =>
+      reservation.payments.map((payment) => ({
+        id: payment.id,
+        reservationId: reservation.id,
+        vehicleName: vehicleLabel(reservation),
+        amountCents: payment.amountCents,
+        kind: payment.kind,
+        status: reservationStatusLabel(payment.status),
+        date: toDateOnly(payment.createdAt)
+      }))
+    ),
+    agreements: reservations
+      .filter((reservation) => reservation.rentalAgreement)
+      .map((reservation) => ({
+        reservationId: reservation.id,
+        vehicleName: vehicleLabel(reservation),
+        legalName: reservation.rentalAgreement!.legalName,
+        agreedAt: toDateOnly(reservation.rentalAgreement!.agreedAt),
+        status: reservationStatusLabel(reservation.rentalAgreement!.status),
+        downloadHref: `/api/public/contracts/${reservation.id}?email=${encodeURIComponent(customer.email)}`
+      })),
+    insuranceUploads: uploads.map((upload) => ({
+      id: upload.id,
+      insuranceCompany: upload.insuranceCompany,
+      policyNumber: upload.policyNumber,
+      policyHolderName: upload.policyHolderName,
+      expirationDate: upload.expirationDate ? toDateOnly(upload.expirationDate) : null,
+      status: reservationStatusLabel(upload.status),
+      documentCount: docCountByUpload.get(upload.id) ?? 0
+    })),
+    insurancePurchases: purchases.map((purchase) => ({
+      id: purchase.id,
+      planName: purchase.planName,
+      coverageSummary: purchase.coverageSummary,
+      totalPriceCents: purchase.totalPriceCents,
+      policyNumber: purchase.policyNumber,
+      status: reservationStatusLabel(purchase.status),
+      startsAt: purchase.startsAt ? toDateOnly(purchase.startsAt) : null,
+      endsAt: purchase.endsAt ? toDateOnly(purchase.endsAt) : null
+    }))
+  };
 }
 
 /* -------------------------------------------------------------------------- */
