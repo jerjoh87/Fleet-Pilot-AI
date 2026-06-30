@@ -53,28 +53,41 @@ async function handleEvent(event: Stripe.Event) {
       const reservationId = session.metadata?.reservationId;
 
       if (session.mode === "payment" && reservationId && isDatabaseConfigured()) {
-        await prisma.reservationPayment.create({
-          data: {
-            reservationId,
-            stripePaymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : null,
-            amountCents: session.amount_total ?? 0,
-            kind: session.metadata?.kind ?? "checkout",
-            status: "paid"
-          }
-        });
+        const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : null;
+        const kind = session.metadata?.kind ?? "checkout";
 
-        await prisma.reservation.updateMany({
-          where: { id: reservationId },
-          data: { status: "CONFIRMED" }
+        // Idempotency: Stripe delivers events at-least-once. If we've already
+        // recorded this payment (same payment intent, or same reservation+kind
+        // when the intent is absent), this is a re-delivery — skip so we don't
+        // double-record or resend confirmation/receipt emails.
+        const alreadyRecorded = await prisma.reservationPayment.findFirst({
+          where: paymentIntentId
+            ? { reservationId, stripePaymentIntentId: paymentIntentId }
+            : { reservationId, kind },
+          select: { id: true }
         });
+        if (alreadyRecorded) break;
 
-        await prisma.transaction.updateMany({
-          where: { reservationId },
-          data: {
-            status: "available",
-            stripePaymentIntentId: typeof session.payment_intent === "string" ? session.payment_intent : null
-          }
-        });
+        // Record the payment and advance the reservation/ledger atomically.
+        await prisma.$transaction([
+          prisma.reservationPayment.create({
+            data: {
+              reservationId,
+              stripePaymentIntentId: paymentIntentId,
+              amountCents: session.amount_total ?? 0,
+              kind,
+              status: "paid"
+            }
+          }),
+          prisma.reservation.updateMany({
+            where: { id: reservationId },
+            data: { status: "CONFIRMED" }
+          }),
+          prisma.transaction.updateMany({
+            where: { reservationId },
+            data: { status: "available", stripePaymentIntentId: paymentIntentId }
+          })
+        ]);
 
         // Payment receipt email
         const reservation = await prisma.reservation.findUnique({
