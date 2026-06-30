@@ -180,13 +180,26 @@ function demoTenant(slug: string): PublicTenant {
   };
 }
 
+/**
+ * Whether the hardcoded "luxedrive" demo tenant may be served as a fallback.
+ * Always on without a database (local dev). With a database, it powers the
+ * marketing site's "see a live booking site" link — set ALLOW_DEMO_TENANT=false
+ * in production once you have real tenants (or have seeded LuxeDrive for real)
+ * so the sample data never shadows a live booking site.
+ */
+function demoFallbackEnabled(): boolean {
+  if (!isDatabaseConfigured()) return true;
+  return process.env.ALLOW_DEMO_TENANT !== "false";
+}
+
 async function isDemoFallback(slug: string): Promise<boolean> {
   if (!isDatabaseConfigured()) return true;
+  if (!demoFallbackEnabled() || slug !== demoOrg.slug) return false;
   const org = await prisma.organization.findFirst({
     where: { OR: [{ slug }, { domain: slug }] },
     select: { id: true }
   });
-  return !org && slug === demoOrg.slug;
+  return !org;
 }
 
 export async function getPublicTenant(slug: string): Promise<PublicTenant | null> {
@@ -201,7 +214,7 @@ export async function getPublicTenant(slug: string): Promise<PublicTenant | null
   });
 
   if (!org) {
-    return slug === demoOrg.slug ? demoTenant(slug) : null;
+    return demoFallbackEnabled() && slug === demoOrg.slug ? demoTenant(slug) : null;
   }
 
   return {
