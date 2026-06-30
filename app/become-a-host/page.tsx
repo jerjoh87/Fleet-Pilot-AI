@@ -132,6 +132,8 @@ export default async function BecomeAHostPage({
                     <span className="h-px flex-1 bg-border" /> or email <span className="h-px flex-1 bg-border" />
                   </div>
                   <form action={signUpAction} className="grid gap-3">
+                    <input type="hidden" name="next" value="/onboard" />
+                    <input type="hidden" name="errorPath" value="/become-a-host" />
                     <Input name="fullName" placeholder="Full name" required />
                     <Input name="email" type="email" placeholder="Email" required />
                     <Input name="password" type="password" placeholder="Password (min 8 characters)" minLength={8} required />
