@@ -11,22 +11,7 @@ import { depositForSelection } from "@/lib/insurance/config";
 import { getProvider, isProviderKey } from "@/lib/insurance/providers";
 import { sendEmail } from "@/lib/email/send";
 import { insurancePurchasedEmail, insuranceUploadedEmail } from "@/lib/email/templates";
-
-// Simple in-memory rate limiter: max 5 checkout attempts per IP per 60 seconds.
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 5;
-
-function isRateLimited(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-  entry.count += 1;
-  return entry.count > RATE_LIMIT_MAX;
-}
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 const ownInsuranceSchema = z.object({
   insuranceCompany: z.string().min(1),
@@ -74,12 +59,6 @@ const bookingSchema = z.object({
   })
 });
 
-function requestIp(request: Request) {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    ?? request.headers.get("x-real-ip")
-    ?? "";
-}
-
 /** Build document metadata from the own-insurance file selections. */
 function ownInsuranceDocs(own: { cardFrontName?: string; cardBackName?: string; declarationName?: string }) {
   const docs: { kind: "CARD_FRONT" | "CARD_BACK" | "DECLARATION_PAGE"; storagePath: string; fileName: string }[] = [];
@@ -112,9 +91,13 @@ async function getActiveAgreementTemplate(organizationId: string, businessName: 
 }
 
 export async function POST(request: Request) {
-  const ip = requestIp(request);
-  if (isRateLimited(ip)) {
-    return NextResponse.json({ error: "Too many requests. Please wait a minute and try again." }, { status: 429 });
+  const ip = clientIp(request.headers) || "unknown";
+  const limit = await rateLimit(`checkout:${ip}`, { limit: 5, windowSec: 60 });
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Too many requests. Please wait a minute and try again." },
+      { status: 429, headers: { "Retry-After": String(limit.resetSeconds) } }
+    );
   }
 
   const parsed = bookingSchema.safeParse(await request.json());
@@ -318,7 +301,7 @@ export async function POST(request: Request) {
     }
 
     const template = await getActiveAgreementTemplate(org.id, org.name);
-    const ipAddress = requestIp(request);
+    const ipAddress = ip;
     const userAgent = request.headers.get("user-agent") ?? "";
     const signatureHash = crypto
       .createHash("sha256")

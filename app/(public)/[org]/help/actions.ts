@@ -1,9 +1,11 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getPublicTenant } from "@/lib/data/public-data";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
 import { sendEmail } from "@/lib/email/send";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 function escapeHtml(value: string) {
   return value
@@ -24,6 +26,13 @@ export async function submitHelpQuestionAction(formData: FormData) {
 
   if (!tenant) {
     supportError(slug, "This rental business could not be found.");
+  }
+
+  // Throttle support submissions per IP to prevent email/spam abuse.
+  const ip = clientIp(await headers()) || "unknown";
+  const limit = await rateLimit(`support:${ip}`, { limit: 5, windowSec: 600 });
+  if (!limit.ok) {
+    supportError(tenant.slug, "You've sent several requests recently. Please wait a few minutes and try again.");
   }
 
   const name = String(formData.get("name") ?? "").trim();

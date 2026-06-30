@@ -6,6 +6,7 @@ import { getPublicTenant } from "@/lib/data/public-data";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 function signupError(slug: string, message: string): never {
   redirect(`/${slug}/signup?error=${encodeURIComponent(message)}` as never);
@@ -17,6 +18,13 @@ export async function customerSignUpAction(formData: FormData) {
 
   if (!tenant) {
     signupError(slug, "This rental business could not be found.");
+  }
+
+  // Throttle account creation per IP to prevent auth-user flooding.
+  const ip = clientIp(await headers()) || "unknown";
+  const limit = await rateLimit(`signup:${ip}`, { limit: 5, windowSec: 600 });
+  if (!limit.ok) {
+    signupError(tenant.slug, "Too many signups from this network. Please wait a few minutes and try again.");
   }
 
   const fullName = String(formData.get("fullName") ?? "").trim();
