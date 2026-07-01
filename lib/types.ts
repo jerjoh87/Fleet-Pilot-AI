@@ -81,6 +81,7 @@ export type Reservation = {
   deposit: number;
   agreementSigned: boolean;
   paymentStatus: "Paid" | "Deposit Held" | "Partial" | "Refunded";
+  approvalStatus?: string;
 };
 
 export type MaintenanceItem = {

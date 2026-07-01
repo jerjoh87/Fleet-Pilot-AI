@@ -154,6 +154,7 @@ model Customer {
   name           String
   email          String
   phone          String?
+  address        String?
   licenseStatus  String   @default("Pending")
   customerType   String   @default("Retail")
   blacklisted    Boolean  @default(false)
@@ -176,6 +177,11 @@ model Driver {
   licenseNumber  String
   licenseState   String
   verified       Boolean @default(false)
+  // Government ID uploaded at booking for host review (private Storage paths).
+  idFrontPath    String?
+  idFrontName    String?
+  idBackPath     String?
+  idBackName     String?
 }
 
 model Reservation {
@@ -189,6 +195,9 @@ model Reservation {
   totalCents     Int
   depositCents   Int
   signedAt       DateTime?
+  // Host review of the renter's identity/booking. Internal (host-created)
+  // reservations are APPROVED; public bookings start PENDING_REVIEW.
+  approvalStatus String            @default("APPROVED")
   organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   customer       Customer          @relation(fields: [customerId], references: [id])
   vehicle        Vehicle           @relation(fields: [vehicleId], references: [id])

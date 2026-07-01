@@ -14,7 +14,10 @@ export default async function CustomerPortalPage({ params, searchParams }: PageP
     email?: string;
     saved?: string;
     error?: string;
+    complete?: string;
+    next?: string;
   };
+  const nextPath = query.next && query.next.startsWith("/") && !query.next.startsWith("//") ? query.next : "";
   const tenant = await getPublicTenant(org);
   const brand = tenant?.brandColor ?? "#166534";
   const slug = tenant?.slug ?? org;
@@ -38,6 +41,8 @@ export default async function CustomerPortalPage({ params, searchParams }: PageP
         email={authUser.email}
         saved={query.saved === "1"}
         error={query.error}
+        completeProfile={query.complete === "1"}
+        nextPath={nextPath}
       />
     );
   }
@@ -147,6 +152,28 @@ function EmptyHint({ children }: { children: React.ReactNode }) {
   return <p className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">{children}</p>;
 }
 
+function ApprovalBadge({ status }: { status: string }) {
+  if (status === "PENDING_REVIEW") {
+    return (
+      <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-900">
+        Pending host approval
+      </span>
+    );
+  }
+  if (status === "REJECTED") {
+    return (
+      <span className="rounded-full border border-red-300 bg-red-50 px-3 py-1 text-xs font-medium text-red-700">
+        Not approved
+      </span>
+    );
+  }
+  return (
+    <span className="rounded-full border border-green-300 bg-green-50 px-3 py-1 text-xs font-medium text-green-800">
+      Approved
+    </span>
+  );
+}
+
 function ReservationCard({
   reservation
 }: {
@@ -167,7 +194,10 @@ function ReservationCard({
             <h3 className="mt-1 text-xl font-bold">{reservation.vehicleName}</h3>
             <p className="mt-1 font-mono text-xs text-muted-foreground">{reservation.id}</p>
           </div>
-          <span className="w-fit rounded-full border px-3 py-1 text-sm font-medium">{reservation.status}</span>
+          <div className="flex w-fit flex-col items-end gap-1.5">
+            <span className="rounded-full border px-3 py-1 text-sm font-medium">{reservation.status}</span>
+            <ApprovalBadge status={reservation.approvalStatus} />
+          </div>
         </div>
         <dl className="mt-5 grid gap-3 text-sm sm:grid-cols-3">
           <div className="rounded-xl bg-muted/50 p-3">
@@ -207,7 +237,9 @@ function SignedInPortal({
   tenantName,
   email,
   saved,
-  error
+  error,
+  completeProfile,
+  nextPath
 }: {
   account: Awaited<ReturnType<typeof getPortalAccount>>;
   slug: string;
@@ -216,6 +248,8 @@ function SignedInPortal({
   email: string;
   saved: boolean;
   error?: string;
+  completeProfile?: boolean;
+  nextPath?: string;
 }) {
   const { profile, reservations, payments, agreements, insuranceUploads, insurancePurchases } = account;
 
@@ -256,11 +290,18 @@ function SignedInPortal({
         </div>
       )}
 
+      {completeProfile ? (
+        <div className="mt-6 rounded-2xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+          Please add your phone number and address to finish your profile — they&apos;re required before you can book.
+        </div>
+      ) : null}
+
       {/* Profile */}
       <section className="mt-10">
         <SectionHeading icon={User} title="Profile" />
         <form action={updateCustomerProfileAction} className="mt-4 grid gap-4 rounded-2xl border bg-card p-5 shadow-sm sm:grid-cols-2">
           <input type="hidden" name="slug" value={slug} />
+          {nextPath ? <input type="hidden" name="next" value={nextPath} /> : null}
           <label className="text-sm">
             <span className="text-muted-foreground">Full name</span>
             <input
@@ -276,8 +317,19 @@ function SignedInPortal({
             <input
               name="phone"
               type="tel"
+              required
               defaultValue={profile?.phone ?? ""}
               placeholder="(555) 555-0100"
+              className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-sm"
+            />
+          </label>
+          <label className="text-sm sm:col-span-2">
+            <span className="text-muted-foreground">Address</span>
+            <input
+              name="address"
+              required
+              defaultValue={profile?.address ?? ""}
+              placeholder="Street, city, state, ZIP"
               className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-sm"
             />
           </label>

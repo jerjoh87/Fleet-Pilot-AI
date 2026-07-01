@@ -318,6 +318,50 @@ export async function createReservationAction(formData: FormData) {
   return { ok: true };
 }
 
+/**
+ * Host decision on a public booking that was held for review. Approving lets
+ * the trip proceed; rejecting cancels the reservation (deposit/charge can then
+ * be refunded from Financials).
+ */
+export async function reviewReservationAction(reservationId: string, decision: "approve" | "reject") {
+  const session = await assertWrite("reservations:write");
+
+  if (!isDatabaseConfigured()) {
+    return { ok: true };
+  }
+
+  const reservation = await prisma.reservation.findFirstOrThrow({
+    where: { id: reservationId, organizationId: session.organization.id }
+  });
+
+  const approvalStatus = decision === "approve" ? "APPROVED" : "REJECTED";
+  await prisma.reservation.update({
+    where: { id: reservation.id },
+    data: {
+      approvalStatus,
+      ...(decision === "reject" ? { status: "CANCELLED" } : {})
+    }
+  });
+
+  if (decision === "reject") {
+    await prisma.vehicle.update({
+      where: { id: reservation.vehicleId },
+      data: { status: "AVAILABLE" }
+    }).catch(() => undefined);
+  }
+
+  await prisma.activityLog.create({
+    data: {
+      organizationId: session.organization.id,
+      actorUserId: session.user.id,
+      action: decision === "approve" ? "approved booking" : "rejected booking",
+      target: reservation.id
+    }
+  });
+
+  return { ok: true, approvalStatus };
+}
+
 export async function createAvailabilityBlockAction(formData: FormData) {
   const session = await assertWrite("fleet:write");
   const parsed = availabilityBlockSchema.parse(Object.fromEntries(formData));

@@ -324,3 +324,39 @@ export function insuranceMoreInfoEmail(data: InsuranceDecisionData) {
     `, data.brandColor)
   };
 }
+
+export type BookingReviewData = {
+  organizationName: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  vehicleName: string;
+  startDate: string;
+  endDate: string;
+  reservationId: string;
+  dashboardUrl: string;
+  brandColor?: string;
+};
+
+/** Sent to the HOST when a renter books and uploads their ID for approval. */
+export function bookingReviewEmail(data: BookingReviewData) {
+  return {
+    subject: `New booking to review — ${data.vehicleName} · ${data.customerName}`,
+    html: base(`
+      <h2>A renter needs your approval</h2>
+      <p><strong>${data.customerName}</strong> just booked and uploaded a government-issued ID. Review the ID and approve or reject the reservation from your dashboard.</p>
+      <div class="box">
+        <table>
+          <tr><td>Vehicle</td><td>${data.vehicleName}</td></tr>
+          <tr><td>Pickup</td><td>${data.startDate}</td></tr>
+          <tr><td>Return</td><td>${data.endDate}</td></tr>
+          <tr><td>Renter</td><td>${data.customerName}</td></tr>
+          <tr><td>Email</td><td>${data.customerEmail}</td></tr>
+          <tr><td>Phone</td><td>${data.customerPhone}</td></tr>
+          <tr><td>Reservation ref.</td><td style="font-family:monospace;font-size:12px">${data.reservationId}</td></tr>
+        </table>
+      </div>
+      <a class="btn" href="${data.dashboardUrl}">Review booking</a>
+    `, data.brandColor)
+  };
+}

@@ -10,7 +10,7 @@ import { getInsuranceSettings, persistInsuranceSelection } from "@/lib/insurance
 import { depositForSelection } from "@/lib/insurance/config";
 import { getProvider, isProviderKey } from "@/lib/insurance/providers";
 import { sendEmail } from "@/lib/email/send";
-import { insurancePurchasedEmail, insuranceUploadedEmail } from "@/lib/email/templates";
+import { bookingReviewEmail, insurancePurchasedEmail, insuranceUploadedEmail } from "@/lib/email/templates";
 import { clientIp, rateLimit } from "@/lib/rate-limit";
 
 const ownInsuranceSchema = z.object({
@@ -46,6 +46,14 @@ const bookingSchema = z.object({
   dob: z.string().min(8),
   licenseNumber: z.string().min(4),
   licenseState: z.string().min(2),
+  idDocument: z
+    .object({
+      frontPath: z.string().min(1),
+      frontName: z.string().optional().default(""),
+      backPath: z.string().optional().default(""),
+      backName: z.string().optional().default("")
+    })
+    .optional(),
   amountCents: z.number().int().positive(),
   depositCents: z.number().int().nonnegative(),
   insurance: insuranceSchema.optional(),
@@ -215,7 +223,7 @@ export async function POST(request: Request) {
       }
     });
 
-    // Persist driver verification info.
+    // Persist driver verification info, including the uploaded government ID.
     await prisma.driver.create({
       data: {
         organizationId: org.id,
@@ -223,7 +231,11 @@ export async function POST(request: Request) {
         fullName: input.customerName,
         licenseNumber: input.licenseNumber,
         licenseState: input.licenseState,
-        verified: false
+        verified: false,
+        idFrontPath: input.idDocument?.frontPath || null,
+        idFrontName: input.idDocument?.frontName || null,
+        idBackPath: input.idDocument?.backPath || null,
+        idBackName: input.idDocument?.backName || null
       }
     });
 
@@ -236,10 +248,31 @@ export async function POST(request: Request) {
         endsAt,
         status: "QUOTE",
         totalCents: serverTotalCents,
-        depositCents: configuredDepositCents
+        depositCents: configuredDepositCents,
+        // Public bookings are held for host review of the renter's ID.
+        approvalStatus: "PENDING_REVIEW"
       }
     });
     reservationId = reservation.id;
+
+    // Notify the host that a booking is waiting on their approval.
+    if (tenant.contactEmail) {
+      void sendEmail({
+        to: tenant.contactEmail,
+        ...bookingReviewEmail({
+          organizationName: tenant.name,
+          customerName: input.customerName,
+          customerEmail: input.customerEmail,
+          customerPhone: input.customerPhone,
+          vehicleName: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+          startDate: input.startDate,
+          endDate: input.endDate,
+          reservationId: reservation.id,
+          dashboardUrl: `${appUrl()}/dashboard`,
+          brandColor: tenant.brandColor
+        })
+      });
+    }
 
     // Persist the insurance choice (purchase / own-policy upload / declined) for this reservation.
     let insuranceRevenueCents = 0;

@@ -1,11 +1,9 @@
-import { MarketingLanding } from "@/components/marketing/landing";
+import { redirect } from "next/navigation";
 
-export const metadata = {
-  title: "FleetPilot AI — The AI operating system for car rentals",
-  description:
-    "Fleet management, a branded booking website, Stripe payments and deposits, and an AI workspace — everything independent car rental operators need in one platform."
-};
-
+/**
+ * The public front page is the LuxeDrive marketplace storefront (Turo-style),
+ * not a separate marketing landing page. Send visitors straight to it.
+ */
 export default function Home() {
-  return <MarketingLanding />;
+  redirect("/luxedrive");
 }

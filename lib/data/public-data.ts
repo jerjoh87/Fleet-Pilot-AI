@@ -71,12 +71,14 @@ export type PortalReservation = {
   depositCents: number;
   paymentStatus: string;
   contractSigned: boolean;
+  approvalStatus: string;
 };
 
 export type PortalProfile = {
   name: string;
   email: string;
   phone: string | null;
+  address: string | null;
   licenseStatus: string;
   memberSince: string;
 };
@@ -484,7 +486,8 @@ export async function getPortalReservations(
       totalCents: vehicle.dailyRate * 3 * 100,
       depositCents: 25000,
       paymentStatus: "Demo",
-      contractSigned: false
+      contractSigned: false,
+      approvalStatus: "APPROVED"
     }];
   }
 
@@ -513,7 +516,8 @@ export async function getPortalReservations(
         totalCents: vehicle.dailyRate * 3 * 100,
         depositCents: 25000,
         paymentStatus: "Demo",
-        contractSigned: false
+        contractSigned: false,
+        approvalStatus: "APPROVED"
       }];
     }
     return [];
@@ -552,7 +556,8 @@ export async function getPortalReservations(
       totalCents: reservation.totalCents,
       depositCents: reservation.depositCents,
       paymentStatus: paid ? "Paid" : latestPayment ? reservationStatusLabel(latestPayment) : "Pending",
-      contractSigned: Boolean(reservation.contract?.signedAt)
+      contractSigned: Boolean(reservation.contract?.signedAt),
+      approvalStatus: reservation.approvalStatus
     };
   });
 }
@@ -642,6 +647,7 @@ export async function getPortalAccount(slug: string, email: string): Promise<Por
       name: customer.name,
       email: customer.email,
       phone: customer.phone,
+      address: customer.address,
       licenseStatus: customer.licenseStatus,
       memberSince: customer.createdAt.toLocaleString("en-US", { month: "long", year: "numeric" })
     },
@@ -660,7 +666,8 @@ export async function getPortalAccount(slug: string, email: string): Promise<Por
         totalCents: reservation.totalCents,
         depositCents: reservation.depositCents,
         paymentStatus: paid ? "Paid" : latestPayment ? reservationStatusLabel(latestPayment) : "Pending",
-        contractSigned: Boolean(reservation.contract?.signedAt || reservation.rentalAgreement)
+        contractSigned: Boolean(reservation.contract?.signedAt || reservation.rentalAgreement),
+        approvalStatus: reservation.approvalStatus
       };
     }),
     payments: reservations.flatMap((reservation) =>

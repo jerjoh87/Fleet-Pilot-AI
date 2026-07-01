@@ -430,7 +430,8 @@ export async function getDashboardData(session: AppSession): Promise<DashboardDa
       total: reservation.totalCents / 100,
       deposit: reservation.depositCents / 100,
       agreementSigned: Boolean(reservation.signedAt),
-      paymentStatus: reservation.depositCents > 0 ? "Deposit Held" : "Partial"
+      paymentStatus: reservation.depositCents > 0 ? "Deposit Held" : "Partial",
+      approvalStatus: reservation.approvalStatus
     })),
     maintenance: dbMaintenance.map((item) => ({
       id: item.id,

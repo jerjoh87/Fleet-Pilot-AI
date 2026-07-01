@@ -51,6 +51,8 @@ function isAtLeast21(dob: string) {
   return age >= 21;
 }
 
+type UploadedDoc = { storagePath: string; fileName: string };
+
 export function BookingForm({
   slug,
   vehicle,
@@ -59,7 +61,9 @@ export function BookingForm({
   taxRatePct,
   platformFeePct,
   availabilityBlocks,
-  bookingInsurance
+  bookingInsurance,
+  prefill,
+  idUploadAvailable = false
 }: {
   slug: string;
   vehicle: PublicVehicle;
@@ -69,6 +73,8 @@ export function BookingForm({
   platformFeePct: number;
   availabilityBlocks: AvailabilityBlock[];
   bookingInsurance: BookingInsurance;
+  prefill?: { name: string; email: string; phone: string };
+  idUploadAvailable?: boolean;
 }) {
   const today = new Date().toISOString().slice(0, 10);
   const [startDate, setStartDate] = React.useState(today);
@@ -82,6 +88,8 @@ export function BookingForm({
   const [typedSignature, setTypedSignature] = React.useState("");
   const [drawnSignature, setDrawnSignature] = React.useState("");
   const [insurance, setInsurance] = React.useState<InsuranceSelectionValue>({ type: "none" });
+  const [idFront, setIdFront] = React.useState<UploadedDoc | null>(null);
+  const [idBack, setIdBack] = React.useState<UploadedDoc | null>(null);
 
   const days = Math.max(1, daysBetween(startDate, endDate));
   const hasRange = Boolean(startDate && endDate && daysBetween(startDate, endDate) > 0);
@@ -148,6 +156,10 @@ export function BookingForm({
       setError("Please enter a valid driver's license number.");
       return;
     }
+    if (idUploadAvailable && !idFront) {
+      setError("Please upload a photo of your government-issued ID before continuing.");
+      return;
+    }
     const legalName = String(form.get("legalName") ?? "");
     const signatureData = signatureMethod === "typed" ? typedSignature : drawnSignature;
     if (!agreementScrolled || !agreed || legalName.length < 2 || signatureData.length < 2) {
@@ -171,6 +183,13 @@ export function BookingForm({
           dob,
           licenseNumber,
           licenseState,
+          idDocument: idFront
+            ? {
+                frontPath: idFront.storagePath,
+                frontName: idFront.fileName,
+                ...(idBack ? { backPath: idBack.storagePath, backName: idBack.fileName } : {})
+              }
+            : undefined,
           amountCents: rentalTotal * 100,
           depositCents: deposit * 100,
           insurance,
@@ -248,15 +267,15 @@ export function BookingForm({
           <div className="mt-2 grid gap-4 sm:grid-cols-2">
             <label className="text-sm sm:col-span-2">
               <span className="text-muted-foreground">Full name</span>
-              <input name="name" required className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-sm" />
+              <input name="name" required defaultValue={prefill?.name ?? ""} className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-sm" />
             </label>
             <label className="text-sm">
               <span className="text-muted-foreground">Email</span>
-              <input name="email" type="email" required className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-sm" />
+              <input name="email" type="email" required defaultValue={prefill?.email ?? ""} className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-sm" />
             </label>
             <label className="text-sm">
               <span className="text-muted-foreground">Phone</span>
-              <input name="phone" required className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-sm" />
+              <input name="phone" required defaultValue={prefill?.phone ?? ""} className="mt-1 h-11 w-full rounded-lg border bg-background px-3 text-sm" />
             </label>
             <label className="text-sm">
               <span className="text-muted-foreground">Date of birth</span>
@@ -272,6 +291,19 @@ export function BookingForm({
             </label>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">You must be at least 21 years of age with a valid driver&apos;s license to rent.</p>
+
+          {idUploadAvailable ? (
+            <div className="mt-5 border-t pt-5">
+              <p className="text-sm font-semibold">Upload your government-issued ID</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                A clear photo of your driver&apos;s license or passport is required. It&apos;s sent securely to the host for approval — your booking is confirmed once approved.
+              </p>
+              <div className="mt-3 grid gap-4 sm:grid-cols-2">
+                <IdUploader slug={slug} label="Front of ID (required)" value={idFront} onChange={setIdFront} brandColor={brandColor} />
+                <IdUploader slug={slug} label="Back of ID (optional)" value={idBack} onChange={setIdBack} brandColor={brandColor} />
+              </div>
+            </div>
+          ) : null}
         </fieldset>
 
         <InsuranceSelection
@@ -414,6 +446,92 @@ export function BookingForm({
         </div>
       </aside>
     </form>
+  );
+}
+
+function IdUploader({
+  slug,
+  label,
+  value,
+  onChange,
+  brandColor
+}: {
+  slug: string;
+  label: string;
+  value: UploadedDoc | null;
+  onChange: (value: UploadedDoc | null) => void;
+  brandColor: string;
+}) {
+  const [uploading, setUploading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+
+  async function handleFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setUploading(true);
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      body.append("slug", slug);
+      const response = await fetch("/api/public/id-upload", { method: "POST", body });
+      const data = (await response.json()) as { storagePath?: string; fileName?: string; error?: string };
+      if (!response.ok || !data.storagePath) {
+        setError(data.error ?? "Upload failed. Please try again.");
+        onChange(null);
+      } else {
+        onChange({ storagePath: data.storagePath, fileName: data.fileName ?? file.name });
+      }
+    } catch {
+      setError("Network error — please try again.");
+      onChange(null);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic,application/pdf"
+        className="hidden"
+        onChange={handleFile}
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={uploading}
+        className="mt-1 flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-dashed bg-background px-3 text-sm font-medium text-muted-foreground transition hover:border-solid disabled:opacity-60"
+        style={value ? { borderColor: brandColor, color: brandColor } : undefined}
+      >
+        {uploading ? (
+          <>
+            <Loader2 className="size-4 animate-spin" /> Uploading…
+          </>
+        ) : value ? (
+          <span className="truncate">✓ {value.fileName}</span>
+        ) : (
+          "Choose file or photo"
+        )}
+      </button>
+      {value ? (
+        <button
+          type="button"
+          onClick={() => {
+            onChange(null);
+            if (inputRef.current) inputRef.current.value = "";
+          }}
+          className="mt-1 text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+          Remove
+        </button>
+      ) : null}
+      {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
+    </div>
   );
 }
 

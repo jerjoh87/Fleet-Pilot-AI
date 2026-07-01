@@ -33,6 +33,9 @@ export async function updateCustomerProfileAction(formData: FormData) {
 
   const name = String(formData.get("name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").trim();
+  const address = String(formData.get("address") ?? "").trim();
+  const nextRaw = String(formData.get("next") ?? "");
+  const next = nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : "";
   if (name.length < 2) portalError(tenant.slug, "Please enter your full name.");
 
   const org = await prisma.organization.findFirst({
@@ -43,10 +46,12 @@ export async function updateCustomerProfileAction(formData: FormData) {
 
   await prisma.customer.upsert({
     where: { organizationId_email: { organizationId: org.id, email } },
-    update: { name, phone: phone || null },
-    create: { organizationId: org.id, email, name, phone: phone || null }
+    update: { name, phone: phone || null, address: address || null },
+    create: { organizationId: org.id, email, name, phone: phone || null, address: address || null }
   });
 
+  // If they were completing their profile in order to book, send them back.
+  if (next) redirect(next as never);
   redirect(`/${tenant.slug}/portal?saved=1` as never);
 }
 

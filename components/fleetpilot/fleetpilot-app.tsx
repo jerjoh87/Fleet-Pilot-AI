@@ -42,7 +42,7 @@ import {
   YAxis
 } from "recharts";
 import { toast } from "sonner";
-import { archiveVehicleAction, createAvailabilityBlockAction, createContractAction, createCustomerAction, createDamageReportAction, createMaintenanceAction, createReservationAction, createVehicleAction, deleteAvailabilityBlockAction, updateVehicleAction, updateWebsiteSettingsAction } from "@/app/dashboard/actions";
+import { archiveVehicleAction, createAvailabilityBlockAction, createContractAction, createCustomerAction, createDamageReportAction, createMaintenanceAction, createReservationAction, createVehicleAction, deleteAvailabilityBlockAction, reviewReservationAction, updateVehicleAction, updateWebsiteSettingsAction } from "@/app/dashboard/actions";
 import { openConnectDashboardAction, removeBankAccountAction, saveAgreementTemplateAction, saveBankingInfoAction, startConnectOnboardingAction } from "@/app/dashboard/financials/actions";
 import { closeSupportMessageAction } from "@/app/dashboard/support/actions";
 import { AiWorkspace } from "@/components/fleetpilot/ai-workspace";
@@ -455,6 +455,26 @@ export function FleetPilotApp({
     }
   }
 
+  async function reviewReservation(reservationId: string, decision: "approve" | "reject") {
+    try {
+      await reviewReservationAction(reservationId, decision);
+      setReservations((current) =>
+        current.map((reservation) =>
+          reservation.id === reservationId
+            ? {
+                ...reservation,
+                approvalStatus: decision === "approve" ? "APPROVED" : "REJECTED",
+                ...(decision === "reject" ? { status: "Cancelled" as const } : {})
+              }
+            : reservation
+        )
+      );
+      toast.success(decision === "approve" ? "Booking approved" : "Booking rejected");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update the booking");
+    }
+  }
+
   async function startConnectOnboarding() {
     try {
       const result = await startConnectOnboardingAction();
@@ -681,7 +701,7 @@ export function FleetPilotApp({
               />
             ) : null}
             {section === "Booking Portal" ? (
-              <BookingPortal customers={scopedCustomers} vehicles={scopedVehicles} reservations={scopedReservations} onCreateContract={createContract} onCreateCustomer={createCustomer} onCreateReservation={createReservation} />
+              <BookingPortal customers={scopedCustomers} vehicles={scopedVehicles} reservations={scopedReservations} onCreateContract={createContract} onCreateCustomer={createCustomer} onCreateReservation={createReservation} onReviewReservation={reviewReservation} />
             ) : null}
             {section === "Support Inbox" ? (
               <SupportInbox messages={supportMessages} onClose={closeSupportMessage} />
@@ -1118,7 +1138,8 @@ function BookingPortal({
   reservations,
   onCreateContract,
   onCreateCustomer,
-  onCreateReservation
+  onCreateReservation,
+  onReviewReservation
 }: {
   customers: Customer[];
   vehicles: Vehicle[];
@@ -1126,6 +1147,7 @@ function BookingPortal({
   onCreateContract: (reservationId: string) => void;
   onCreateCustomer: (event: React.FormEvent<HTMLFormElement>) => void;
   onCreateReservation: (event: React.FormEvent<HTMLFormElement>) => void;
+  onReviewReservation: (reservationId: string, decision: "approve" | "reject") => void;
 }) {
   const availableVehicles = vehicles.filter((vehicle) => vehicle.status === "Available");
 
@@ -1190,23 +1212,42 @@ function BookingPortal({
         </Panel>
         <Panel title="Reservation Queue">
           <div className="flex flex-col gap-3">
-            {reservations.slice(0, 4).map((reservation) => (
-              <div key={reservation.id} className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-medium text-white">{reservation.id}</p>
-                  <p className="text-sm text-slate-400">{reservation.startDate} to {reservation.endDate}</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-blue-400/30 bg-blue-400/10 px-3 py-1 text-xs text-blue-200">{reservation.status}</span>
-                  <Button className="h-8 border-white/10 bg-white/[0.04] px-3 text-xs text-white hover:bg-white/[0.08]" type="button" variant="outline" onClick={() => onCreateContract(reservation.id)}>
-                    Generate
-                  </Button>
-                  <a className="inline-flex h-8 items-center rounded-md border border-white/10 bg-white/[0.04] px-3 text-xs text-white hover:bg-white/[0.08]" href={`/api/contracts/${reservation.id}`} target="_blank" rel="noreferrer">
-                    Contract
-                  </a>
-                </div>
-              </div>
-            ))}
+            {[...reservations]
+              .sort((a, b) => (a.approvalStatus === "PENDING_REVIEW" ? -1 : 0) - (b.approvalStatus === "PENDING_REVIEW" ? -1 : 0))
+              .slice(0, 5)
+              .map((reservation) => {
+                const pending = reservation.approvalStatus === "PENDING_REVIEW";
+                return (
+                  <div key={reservation.id} className={`flex flex-col gap-3 rounded-2xl border p-4 sm:flex-row sm:items-center sm:justify-between ${pending ? "border-amber-400/40 bg-amber-400/[0.06]" : "border-white/10 bg-white/[0.035]"}`}>
+                    <div>
+                      <p className="font-medium text-white">{reservation.id}</p>
+                      <p className="text-sm text-slate-400">{reservation.startDate} to {reservation.endDate}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-full border border-blue-400/30 bg-blue-400/10 px-3 py-1 text-xs text-blue-200">{reservation.status}</span>
+                      {pending ? (
+                        <>
+                          <span className="rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs text-amber-200">Awaiting ID approval</span>
+                          <Button className="h-8 bg-emerald-500 px-3 text-xs text-slate-950 hover:bg-emerald-400" type="button" onClick={() => onReviewReservation(reservation.id, "approve")}>
+                            Approve
+                          </Button>
+                          <Button className="h-8 border-red-400/30 bg-red-500/10 px-3 text-xs text-red-200 hover:bg-red-500/20" type="button" variant="outline" onClick={() => onReviewReservation(reservation.id, "reject")}>
+                            Reject
+                          </Button>
+                        </>
+                      ) : reservation.approvalStatus === "REJECTED" ? (
+                        <span className="rounded-full border border-red-400/30 bg-red-500/10 px-3 py-1 text-xs text-red-200">Rejected</span>
+                      ) : null}
+                      <Button className="h-8 border-white/10 bg-white/[0.04] px-3 text-xs text-white hover:bg-white/[0.08]" type="button" variant="outline" onClick={() => onCreateContract(reservation.id)}>
+                        Generate
+                      </Button>
+                      <a className="inline-flex h-8 items-center rounded-md border border-white/10 bg-white/[0.04] px-3 text-xs text-white hover:bg-white/[0.08]" href={`/api/contracts/${reservation.id}`} target="_blank" rel="noreferrer">
+                        Contract
+                      </a>
+                    </div>
+                  </div>
+                );
+              })}
           </div>
         </Panel>
       </div>
