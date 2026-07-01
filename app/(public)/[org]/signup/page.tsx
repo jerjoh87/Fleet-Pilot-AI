@@ -112,13 +112,8 @@ export default async function CustomerSignupPage({
           <form action={customerSignUpAction} className="grid gap-3">
             <input type="hidden" name="slug" value={slug} />
             <input type="hidden" name="next" value={nextPath} />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input name="firstName" placeholder="First name" required />
-              <Input name="lastName" placeholder="Last name" required />
-            </div>
+            <Input name="fullName" placeholder="Full legal name" required />
             <Input name="email" type="email" defaultValue={query.email ?? ""} placeholder="Email address" required />
-            <Input name="phone" type="tel" placeholder="Phone number" required />
-            <Input name="address" placeholder="Home address (street, city, state, ZIP)" required />
             <Input name="password" type="password" placeholder="Password (8+ characters)" minLength={8} required />
             <Button className="mt-2" style={{ backgroundColor: brand }}>
               Create renter account

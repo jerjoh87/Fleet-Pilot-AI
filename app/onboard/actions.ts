@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireAuthenticatedUser, slugifyOrganizationName } from "@/lib/auth/session";
 import { syncUserProfile } from "@/lib/auth/users";
+import { agreementTemplateToContent, defaultAgreementTemplate } from "@/lib/agreements/default-template";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
 
 const onboardSchema = z.object({
@@ -13,6 +14,7 @@ const onboardSchema = z.object({
   heroTitle: z.string().min(8),
   about: z.string().max(1200).optional(),
   serviceArea: z.string().max(120).optional(),
+  businessAddress: z.string().min(5, "Enter your home or business address."),
   backgroundStyle: z.enum(["soft", "solid", "cover"]).default("soft"),
   brandColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   depositFee: z.coerce.number().min(0).max(10000).default(250),
@@ -34,6 +36,7 @@ export async function createOrganizationAction(formData: FormData) {
     heroTitle: String(formData.get("heroTitle") || "Premium vehicles, booked in minutes."),
     about: String(formData.get("about") || ""),
     serviceArea: String(formData.get("serviceArea") || ""),
+    businessAddress: String(formData.get("businessAddress") || ""),
     backgroundStyle: (formData.get("backgroundStyle") as string) || "soft",
     brandColor: String(formData.get("brandColor") || "#166534"),
     depositFee: formData.get("depositFee") ?? 250,
@@ -69,6 +72,27 @@ export async function createOrganizationAction(formData: FormData) {
             depositFeeCents: Math.round(parsed.depositFee * 100)
           }
         }
+      }
+    });
+
+    const agreementTemplate = {
+      ...defaultAgreementTemplate(parsed.organizationName),
+      businessAddress: parsed.businessAddress
+    };
+
+    const template = await tx.agreementTemplate.create({
+      data: {
+        organizationId: organization.id,
+        ...agreementTemplate
+      }
+    });
+
+    await tx.agreementVersion.create({
+      data: {
+        organizationId: organization.id,
+        templateId: template.id,
+        version: template.activeVersion,
+        content: agreementTemplateToContent(agreementTemplate)
       }
     });
 

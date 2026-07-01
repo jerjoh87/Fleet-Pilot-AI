@@ -28,6 +28,7 @@ export type AuthenticatedUser = {
   id: string;
   email: string;
   fullName: string;
+  homeAddress?: string;
 };
 
 const demoSession: AppSession = {
@@ -123,7 +124,8 @@ export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> 
   const user = {
     id: authUser.id,
     email: authUser.email ?? "",
-    fullName: String(authUser.user_metadata?.full_name ?? authUser.email ?? "Fleet Operator")
+    fullName: String(authUser.user_metadata?.full_name ?? authUser.email ?? "Fleet Operator"),
+    homeAddress: String(authUser.user_metadata?.home_address ?? "")
   };
 
   if (!isDatabaseConfigured()) {
@@ -135,7 +137,8 @@ export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> 
   return {
     id: profile.id,
     email: profile.email,
-    fullName: profile.fullName ?? profile.email
+    fullName: profile.fullName ?? profile.email,
+    homeAddress: user.homeAddress
   };
 }
 

@@ -134,8 +134,10 @@ export default async function BecomeAHostPage({
                   <form action={signUpAction} className="grid gap-3">
                     <input type="hidden" name="next" value="/onboard" />
                     <input type="hidden" name="errorPath" value="/become-a-host" />
+                    <input type="hidden" name="accountType" value="host" />
                     <Input name="fullName" placeholder="Full name" required />
                     <Input name="email" type="email" placeholder="Email" required />
+                    <Input name="homeAddress" placeholder="Home or business address" required />
                     <Input name="password" type="password" placeholder="Password (min 8 characters)" minLength={8} required />
                     <Button className="mt-2">Create host account</Button>
                   </form>

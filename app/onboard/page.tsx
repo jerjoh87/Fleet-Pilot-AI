@@ -97,6 +97,10 @@ export default async function OnboardPage() {
                 <Input name="serviceArea" placeholder="Austin, TX" />
               </label>
               <label className="grid gap-2 text-sm">
+                <span className="text-muted-foreground">Home or business address</span>
+                <Input name="businessAddress" defaultValue={user.homeAddress ?? ""} placeholder="123 Main St, Austin, TX" required />
+              </label>
+              <label className="grid gap-2 text-sm">
                 <span className="text-muted-foreground">About your rental business</span>
                 <textarea name="about" rows={4} placeholder="Tell customers what makes your fleet and service different." className="rounded-md border bg-card px-3 py-3 text-sm outline-none transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring" />
               </label>

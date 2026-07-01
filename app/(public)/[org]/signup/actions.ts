@@ -36,25 +36,12 @@ export async function customerSignUpAction(formData: FormData) {
     signupError(tenant.slug, "Too many signups from this network. Please wait a few minutes and try again.", nextPath);
   }
 
-  const firstName = String(formData.get("firstName") ?? "").trim();
-  const lastName = String(formData.get("lastName") ?? "").trim();
-  const fullName = `${firstName} ${lastName}`.trim();
+  const fullName = String(formData.get("fullName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const phone = String(formData.get("phone") ?? "").trim();
-  const address = String(formData.get("address") ?? "").trim();
   const password = String(formData.get("password") ?? "");
 
-  if (!firstName || !lastName) {
-    signupError(tenant.slug, "Enter your first and last name.", nextPath);
-  }
-  if (!email || password.length < 8) {
-    signupError(tenant.slug, "Enter your email and an 8+ character password.", nextPath);
-  }
-  if (phone.length < 7) {
-    signupError(tenant.slug, "Enter a valid phone number.", nextPath);
-  }
-  if (address.length < 5) {
-    signupError(tenant.slug, "Enter your address.", nextPath);
+  if (!fullName || !email || password.length < 8) {
+    signupError(tenant.slug, "Enter your name, email, and an 8+ character password.", nextPath);
   }
 
   // After signup, send the renter on to wherever they were headed (a booking
@@ -106,13 +93,11 @@ export async function customerSignUpAction(formData: FormData) {
       if (org) {
         await prisma.customer.upsert({
           where: { organizationId_email: { organizationId: org.id, email } },
-          update: { name: fullName, phone: phone || null, address: address || null },
+          update: { name: fullName },
           create: {
             organizationId: org.id,
             name: fullName,
-            email,
-            phone: phone || null,
-            address: address || null
+            email
           }
         });
       }

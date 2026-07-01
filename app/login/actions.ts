@@ -58,11 +58,17 @@ export async function signUpAction(formData: FormData) {
   const fullName = String(formData.get("fullName") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const accountType = String(formData.get("accountType") ?? "");
+  const homeAddress = String(formData.get("homeAddress") ?? "").trim();
   const next = safeNext(formData.get("next") ?? "/onboard");
   const errorPath = safePath(formData.get("errorPath"));
 
   if (!fullName || !email || password.length < 8) {
     authError("Enter your full name, email, and a password with at least 8 characters.", errorPath);
+  }
+
+  if (accountType === "host" && !homeAddress) {
+    authError("Enter your home or business address to create a host account.", errorPath);
   }
 
   const supabase = await createSupabaseServerClient();
@@ -78,7 +84,9 @@ export async function signUpAction(formData: FormData) {
       options: {
         emailRedirectTo: `${origin}/auth/confirm?next=${encodeURIComponent(next)}`,
         data: {
-          full_name: fullName
+          full_name: fullName,
+          account_type: accountType || "host",
+          home_address: homeAddress || undefined
         }
       }
     });
