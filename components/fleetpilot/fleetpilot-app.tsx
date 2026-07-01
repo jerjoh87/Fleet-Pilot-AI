@@ -27,6 +27,7 @@ import {
   Search,
   Settings,
   Sparkles,
+  Wand2,
   Wrench,
   X,
   type LucideIcon
@@ -45,6 +46,7 @@ import { archiveVehicleAction, createAvailabilityBlockAction, createContractActi
 import { openConnectDashboardAction, removeBankAccountAction, saveAgreementTemplateAction, saveBankingInfoAction, startConnectOnboardingAction } from "@/app/dashboard/financials/actions";
 import { closeSupportMessageAction } from "@/app/dashboard/support/actions";
 import { AiWorkspace } from "@/components/fleetpilot/ai-workspace";
+import { AdMaker } from "@/components/fleetpilot/admaker/ad-maker";
 import { BillingPanel } from "@/components/fleetpilot/billing-panel";
 import { InsurancePanel } from "@/components/fleetpilot/insurance-panel";
 import { ShieldCheck } from "lucide-react";
@@ -59,7 +61,7 @@ import type { WebsiteSettingsData } from "@/lib/data/dashboard-data";
 import { HostProfilePreview, type ProfileDraft } from "@/components/fleetpilot/host-profile-preview";
 import { currency, number } from "@/lib/utils";
 
-type Section = "Landing Page" | "Operations Dashboard" | "Fleet Management" | "Booking Portal" | "Support Inbox" | "Financials" | "AI Workspace" | "Billing" | "Insurance" | "Analytics" | "Maintenance" | "Settings";
+type Section = "Landing Page" | "Operations Dashboard" | "Fleet Management" | "Booking Portal" | "Support Inbox" | "Financials" | "AI Workspace" | "AI Ad Maker" | "Billing" | "Insurance" | "Analytics" | "Maintenance" | "Settings";
 
 type Props = {
   initialActivity: ActivityItem[];
@@ -82,6 +84,7 @@ type Props = {
   initialWebsiteSettings: WebsiteSettingsData;
   initialVehicles: Vehicle[];
   aiConnected: boolean;
+  adProviders: Array<{ id: string; label: string; available: boolean; comingSoon: boolean }>;
   stripeConnected: boolean;
   insuranceDashboard: InsuranceDashboard;
 };
@@ -93,6 +96,7 @@ const sections: Array<{ name: Section; icon: React.ComponentType<{ className?: s
   { name: "Support Inbox", icon: Inbox },
   { name: "Financials", icon: Landmark },
   { name: "AI Workspace", icon: Sparkles },
+  { name: "AI Ad Maker", icon: Wand2 },
   { name: "Billing", icon: CreditCard },
   { name: "Insurance", icon: ShieldCheck },
   { name: "Analytics", icon: Gauge },
@@ -140,6 +144,7 @@ export function FleetPilotApp({
   initialWebsiteSettings,
   initialVehicles,
   aiConnected,
+  adProviders,
   stripeConnected,
   insuranceDashboard
 }: Props) {
@@ -703,6 +708,17 @@ export function FleetPilotApp({
                 reservations={scopedReservations}
                 revenueSeries={initialRevenueSeries}
                 vehicles={scopedVehicles}
+              />
+            ) : null}
+            {section === "AI Ad Maker" ? (
+              <AdMaker
+                organizationId={organizationId}
+                orgName={initialOrganization.name}
+                website={websiteSettings.customDomain || initialOrganization.domain}
+                brandColor={websiteSettings.brandColor}
+                logoUrl={websiteSettings.logoUrl}
+                aiConnected={aiConnected}
+                providers={adProviders}
               />
             ) : null}
             {section === "Billing" ? (

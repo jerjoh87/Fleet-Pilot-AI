@@ -2,6 +2,7 @@ import { FleetPilotApp } from "@/components/fleetpilot/fleetpilot-app";
 import { requireAppSession } from "@/lib/auth/session";
 import { getDashboardData } from "@/lib/data/dashboard-data";
 import { getInsuranceDashboard } from "@/lib/insurance/data";
+import { listProviders } from "@/lib/admaker/providers";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,7 @@ export default async function DashboardPage() {
   return (
     <FleetPilotApp
       aiConnected={Boolean(process.env.OPENAI_API_KEY)}
+      adProviders={listProviders()}
       insuranceDashboard={insuranceDashboard}
       initialActivity={data.activity}
       initialAvailabilityBlocks={data.availabilityBlocks}
