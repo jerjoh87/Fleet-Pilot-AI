@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getPublicTenant } from "@/lib/data/public-data";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import type { OrgRoutePageProps } from "../route-types";
 
 export const dynamic = "force-dynamic";
 
 export default async function CustomerSignupPage({
   params,
   searchParams
-}: PageProps<"/[org]/signup">) {
+}: OrgRoutePageProps<{ error?: string; email?: string; next?: string; mode?: string }>) {
   const { org } = await params;
   const query = (await searchParams) as { error?: string; email?: string; next?: string; mode?: string };
   const tenant = await getPublicTenant(org);

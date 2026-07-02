@@ -4,10 +4,21 @@ import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { currency } from "@/lib/utils";
 import { signOutCustomerAction, updateCustomerProfileAction } from "./actions";
+import type { OrgRoutePageProps } from "../route-types";
 
 export const dynamic = "force-dynamic";
 
-export default async function CustomerPortalPage({ params, searchParams }: PageProps<"/[org]/portal">) {
+export default async function CustomerPortalPage({
+  params,
+  searchParams
+}: OrgRoutePageProps<{
+  reservation?: string;
+  email?: string;
+  saved?: string;
+  error?: string;
+  complete?: string;
+  next?: string;
+}>) {
   const { org } = await params;
   const query = (await searchParams) as {
     reservation?: string;

@@ -6,10 +6,11 @@ import { BookingForm } from "@/components/public/booking-form";
 import { isDatabaseConfigured, prisma } from "@/lib/db/prisma";
 import { isSupabaseAdminConfigured, isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type { VehicleRouteParamsProps } from "../../route-types";
 
 export const dynamic = "force-dynamic";
 
-export default async function BookVehiclePage({ params }: PageProps<"/[org]/book/[vehicleId]">) {
+export default async function BookVehiclePage({ params }: VehicleRouteParamsProps) {
   const { org, vehicleId } = await params;
   const [tenant, vehicle, availabilityBlocks] = await Promise.all([
     getPublicTenant(org),

@@ -3,10 +3,11 @@ import { ArrowLeft, BadgeCheck, Check, Clock, Fuel, Heart, MapPin, Settings2, Sh
 import { getHostProfile, getPublicTenant, getPublicVehicle, getReviews } from "@/lib/data/public-data";
 import { ReviewsSection } from "@/components/public/reviews-section";
 import { currency } from "@/lib/utils";
+import type { VehicleRouteParamsProps } from "../../route-types";
 
 export const dynamic = "force-dynamic";
 
-export default async function VehicleDetailPage({ params }: PageProps<"/[org]/vehicles/[vehicleId]">) {
+export default async function VehicleDetailPage({ params }: VehicleRouteParamsProps) {
   const { org, vehicleId } = await params;
   const [tenant, vehicle, host, reviews] = await Promise.all([
     getPublicTenant(org),

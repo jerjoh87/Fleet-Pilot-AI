@@ -4,10 +4,11 @@ import { getHostProfile, getPublicFleet, getPublicTenant, getReviews } from "@/l
 import { VehicleCard } from "@/components/public/vehicle-card";
 import { ReviewsSection } from "@/components/public/reviews-section";
 import { appUrl } from "@/lib/billing/customer";
+import type { OrgRoutePageProps, OrgRouteParamsProps } from "./route-types";
 
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({ params }: PageProps<"/[org]">): Promise<Metadata> {
+export async function generateMetadata({ params }: OrgRouteParamsProps): Promise<Metadata> {
   const { org } = await params;
   const tenant = await getPublicTenant(org);
   if (!tenant) {
@@ -54,7 +55,7 @@ const CHIPS: { label: string; params: Record<string, string> }[] = [
   { label: "Under $250", params: { maxRate: "250" } }
 ];
 
-export default async function TenantHomePage({ params, searchParams }: PageProps<"/[org]">) {
+export default async function TenantHomePage({ params, searchParams }: OrgRoutePageProps<{ q?: string; maxRate?: string; fuel?: string }>) {
   const { org } = await params;
   const filters = (await searchParams) as { q?: string; maxRate?: string; fuel?: string };
   const tenant = await getPublicTenant(org);
