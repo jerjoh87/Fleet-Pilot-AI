@@ -1,10 +1,11 @@
 import { notFound } from "next/navigation";
 import { Car, Instagram, Facebook, User } from "lucide-react";
 import { getPublicTenant } from "@/lib/data/public-data";
+import type { OrgRouteLayoutProps } from "./route-types";
 
 export const dynamic = "force-dynamic";
 
-export default async function PublicTenantLayout({ children, params }: LayoutProps<"/[org]">) {
+export default async function PublicTenantLayout({ children, params }: OrgRouteLayoutProps) {
   const { org } = await params;
   const tenant = await getPublicTenant(org);
 

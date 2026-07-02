@@ -3,13 +3,14 @@ import { submitHelpQuestionAction } from "@/app/(public)/[org]/help/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getPublicTenant } from "@/lib/data/public-data";
+import type { OrgRoutePageProps } from "../route-types";
 
 export const dynamic = "force-dynamic";
 
 export default async function HelpPage({
   params,
   searchParams
-}: PageProps<"/[org]/help">) {
+}: OrgRoutePageProps<{ sent?: string; error?: string }>) {
   const { org } = await params;
   const query = (await searchParams) as { sent?: string; error?: string };
   const tenant = await getPublicTenant(org);

@@ -1,9 +1,10 @@
 import { CheckCircle2 } from "lucide-react";
 import { getPublicTenant } from "@/lib/data/public-data";
+import type { OrgRoutePageProps } from "../../route-types";
 
 export const dynamic = "force-dynamic";
 
-export default async function BookingSuccessPage({ params, searchParams }: PageProps<"/[org]/booking/success">) {
+export default async function BookingSuccessPage({ params, searchParams }: OrgRoutePageProps<{ reservation?: string; demo?: string }>) {
   const { org } = await params;
   const { reservation, demo } = (await searchParams) as { reservation?: string; demo?: string };
   const tenant = await getPublicTenant(org);

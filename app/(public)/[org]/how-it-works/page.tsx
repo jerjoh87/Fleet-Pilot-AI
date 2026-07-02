@@ -1,9 +1,10 @@
 import { CalendarCheck, Car, CreditCard, FileSignature, IdCard, ShieldCheck } from "lucide-react";
 import { getPublicTenant } from "@/lib/data/public-data";
+import type { OrgRouteParamsProps } from "../route-types";
 
 export const dynamic = "force-dynamic";
 
-export default async function HowItWorksPage({ params }: PageProps<"/[org]/how-it-works">) {
+export default async function HowItWorksPage({ params }: OrgRouteParamsProps) {
   const { org } = await params;
   const tenant = await getPublicTenant(org);
   const brand = tenant?.brandColor ?? "#166534";
